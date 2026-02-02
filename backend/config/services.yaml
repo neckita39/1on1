@@ -1,0 +1,17 @@
+parameters:
+    jwt_secret: '%env(JWT_SECRET)%'
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/Entity/'
+            - '../src/Kernel.php'
+
+    App\Service\AuthService:
+        arguments:
+            $jwtSecret: '%jwt_secret%'

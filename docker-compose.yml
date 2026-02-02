@@ -1,0 +1,26 @@
+services:
+  backend:
+    build: ./backend
+    container_name: 1on1-backend
+    volumes:
+      - ./data:/app/var/data
+    environment:
+      - DATABASE_URL=sqlite:////app/var/data/app.db
+      - APP_SECRET=${APP_SECRET}
+      - JWT_SECRET=${JWT_SECRET}
+    networks:
+      - app-network
+
+  frontend:
+    build: ./frontend
+    container_name: 1on1-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
