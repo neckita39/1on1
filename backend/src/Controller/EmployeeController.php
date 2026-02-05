@@ -40,6 +40,7 @@ class EmployeeController extends AbstractController
             'id' => $e->getId(),
             'name' => $e->getName(),
             'position' => $e->getPosition(),
+            'bio' => $e->getBio(),
             'lastMeetingDate' => $e->getLastMeeting()?->getDate()->format('Y-m-d'),
             'agendaCount' => $e->getActiveAgendaCount(),
             'createdAt' => $e->getCreatedAt()->format('c')
@@ -60,6 +61,7 @@ class EmployeeController extends AbstractController
         $employee = new Employee();
         $employee->setName($data['name']);
         $employee->setPosition($data['position'] ?? null);
+        $employee->setBio($data['bio'] ?? null);
 
         $this->em->persist($employee);
         $this->em->flush();
@@ -68,6 +70,7 @@ class EmployeeController extends AbstractController
             'id' => $employee->getId(),
             'name' => $employee->getName(),
             'position' => $employee->getPosition(),
+            'bio' => $employee->getBio(),
             'createdAt' => $employee->getCreatedAt()->format('c')
         ], Response::HTTP_CREATED);
     }
@@ -87,6 +90,7 @@ class EmployeeController extends AbstractController
             'id' => $employee->getId(),
             'name' => $employee->getName(),
             'position' => $employee->getPosition(),
+            'bio' => $employee->getBio(),
             'lastMeetingDate' => $employee->getLastMeeting()?->getDate()->format('Y-m-d'),
             'agendaCount' => $employee->getActiveAgendaCount(),
             'createdAt' => $employee->getCreatedAt()->format('c')
@@ -112,6 +116,9 @@ class EmployeeController extends AbstractController
         if (array_key_exists('position', $data)) {
             $employee->setPosition($data['position']);
         }
+        if (array_key_exists('bio', $data)) {
+            $employee->setBio($data['bio']);
+        }
 
         $this->em->flush();
 
@@ -119,6 +126,7 @@ class EmployeeController extends AbstractController
             'id' => $employee->getId(),
             'name' => $employee->getName(),
             'position' => $employee->getPosition(),
+            'bio' => $employee->getBio(),
             'createdAt' => $employee->getCreatedAt()->format('c')
         ]);
     }

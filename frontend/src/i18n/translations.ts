@@ -21,7 +21,7 @@ export const translations = {
     setupPassword: 'Set up your password to get started',
     loginFailed: 'Login failed',
     setupFailed: 'Setup failed',
-    passwordMinLength: 'Password must be at least 4 characters',
+    passwordMinLength: 'Password must be at least 12 characters',
     passwordsDoNotMatch: 'Passwords do not match',
 
     // Employees
@@ -31,6 +31,8 @@ export const translations = {
     name: 'Name',
     position: 'Position',
     positionOptional: 'Position (optional)',
+    bio: 'Personal Info',
+    bioPlaceholder: 'Location, family status, hobbies, etc...',
     adding: 'Adding...',
     noEmployees: 'No employees yet. Add your first employee to get started.',
     deleteEmployeeConfirm: 'Are you sure you want to delete this employee? All meetings and agenda items will be deleted.',
@@ -89,7 +91,7 @@ export const translations = {
     setupPassword: 'Установите пароль для начала работы',
     loginFailed: 'Ошибка входа',
     setupFailed: 'Ошибка настройки',
-    passwordMinLength: 'Пароль должен быть не менее 4 символов',
+    passwordMinLength: 'Пароль должен быть не менее 12 символов',
     passwordsDoNotMatch: 'Пароли не совпадают',
 
     // Employees
@@ -99,6 +101,8 @@ export const translations = {
     name: 'Имя',
     position: 'Должность',
     positionOptional: 'Должность (необязательно)',
+    bio: 'Личная информация',
+    bioPlaceholder: 'Город, семейное положение, хобби и т.д...',
     adding: 'Добавление...',
     noEmployees: 'Пока нет сотрудников. Добавьте первого сотрудника для начала работы.',
     deleteEmployeeConfirm: 'Вы уверены, что хотите удалить этого сотрудника? Все встречи и темы для обсуждения будут удалены.',

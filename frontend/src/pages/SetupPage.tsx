@@ -30,7 +30,7 @@ export default function SetupPage() {
     e.preventDefault()
     setError('')
 
-    if (password.length < 4) {
+    if (password.length < 12) {
       setError(t('passwordMinLength'))
       return
     }

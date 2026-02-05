@@ -23,6 +23,9 @@ class Employee
     #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
     private ?string $position = null;
 
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $bio = null;
+
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private \DateTime $createdAt;
 
@@ -65,6 +68,17 @@ class Employee
     public function setPosition(?string $position): self
     {
         $this->position = $position;
+        return $this;
+    }
+
+    public function getBio(): ?string
+    {
+        return $this->bio;
+    }
+
+    public function setBio(?string $bio): self
+    {
+        $this->bio = $bio;
         return $this;
     }
 

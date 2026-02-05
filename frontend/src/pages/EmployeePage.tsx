@@ -16,6 +16,7 @@ export default function EmployeePage() {
   const [editing, setEditing] = useState(false)
   const [editName, setEditName] = useState('')
   const [editPosition, setEditPosition] = useState('')
+  const [editBio, setEditBio] = useState('')
   const [showMeetingForm, setShowMeetingForm] = useState(false)
   const { t } = useI18n()
 
@@ -33,6 +34,7 @@ export default function EmployeePage() {
       setMeetings(meetingsRes.data)
       setEditName(empRes.data.name)
       setEditPosition(empRes.data.position || '')
+      setEditBio(empRes.data.bio || '')
     } catch (error) {
       console.error('Failed to load data', error)
       navigate('/')
@@ -51,6 +53,7 @@ export default function EmployeePage() {
       await employeesApi.update(employeeId, {
         name: editName.trim(),
         position: editPosition.trim() || undefined,
+        bio: editBio.trim() || undefined,
       })
       setEditing(false)
       loadData()
@@ -126,6 +129,16 @@ export default function EmployeePage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('bio')}</label>
+                <textarea
+                  value={editBio}
+                  onChange={(e) => setEditBio(e.target.value)}
+                  rows={4}
+                  placeholder={t('bioPlaceholder')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+              </div>
               <div className="flex gap-2">
                 <button
                   onClick={handleSaveEdit}
@@ -138,6 +151,7 @@ export default function EmployeePage() {
                     setEditing(false)
                     setEditName(employee.name)
                     setEditPosition(employee.position || '')
+                    setEditBio(employee.bio || '')
                   }}
                   className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm hover:bg-gray-300"
                 >
@@ -146,14 +160,15 @@ export default function EmployeePage() {
               </div>
             </div>
           ) : (
-            <div className="flex justify-between items-start">
-              <div>
-                <h2 className="font-semibold text-lg">{employee.name}</h2>
-                {employee.position && (
-                  <p className="text-gray-500">{employee.position}</p>
-                )}
-              </div>
-              <div className="flex gap-2">
+            <div className="space-y-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h2 className="font-semibold text-lg">{employee.name}</h2>
+                  {employee.position && (
+                    <p className="text-gray-500">{employee.position}</p>
+                  )}
+                </div>
+                <div className="flex gap-2">
                 <button
                   onClick={() => setEditing(true)}
                   className="text-sm text-blue-600 hover:text-blue-800"
@@ -167,6 +182,12 @@ export default function EmployeePage() {
                   {t('delete')}
                 </button>
               </div>
+              </div>
+              {employee.bio && (
+                <div className="pt-3 border-t border-gray-200">
+                  <p className="text-sm text-gray-600 whitespace-pre-wrap">{employee.bio}</p>
+                </div>
+              )}
             </div>
           )}
         </section>

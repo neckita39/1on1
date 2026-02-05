@@ -8,6 +8,7 @@ var/
 
 # Data
 data/
+backups/
 
 # IDE
 .idea/

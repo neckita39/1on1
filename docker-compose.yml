@@ -1,4 +1,16 @@
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: 1on1-redis
+    command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   backend:
     build: ./backend
     container_name: 1on1-backend
@@ -8,6 +20,11 @@ services:
       - DATABASE_URL=sqlite:////app/var/data/app.db
       - APP_SECRET=${APP_SECRET}
       - JWT_SECRET=${JWT_SECRET}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      redis:
+        condition: service_healthy
     networks:
       - app-network
 
@@ -15,7 +32,7 @@ services:
     build: ./frontend
     container_name: 1on1-frontend
     ports:
-      - "3000:80"
+      - "127.0.0.1:3000:80"  # Доступ только с localhost
     depends_on:
       - backend
     networks:

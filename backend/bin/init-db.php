@@ -22,6 +22,7 @@ $pdo->exec("
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name VARCHAR(255) NOT NULL,
         position VARCHAR(255),
+        bio TEXT,
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -68,6 +69,12 @@ if (!in_array('sort_order', $agendaCols)) {
     $pdo->exec("ALTER TABLE agenda_items ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0");
     // Set sort_order based on id for existing items
     $pdo->exec("UPDATE agenda_items SET sort_order = id");
+}
+
+// Migration: add bio column to employees if not exists
+$employeeCols = $pdo->query("PRAGMA table_info(employees)")->fetchAll(PDO::FETCH_COLUMN, 1);
+if (!in_array('bio', $employeeCols)) {
+    $pdo->exec("ALTER TABLE employees ADD COLUMN bio TEXT");
 }
 
 echo "Database initialized successfully\n";

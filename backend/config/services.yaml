@@ -1,5 +1,7 @@
 parameters:
     jwt_secret: '%env(JWT_SECRET)%'
+    redis_host: '%env(REDIS_HOST)%'
+    redis_port: '%env(int:REDIS_PORT)%'
 
 services:
     _defaults:
@@ -15,3 +17,8 @@ services:
     App\Service\AuthService:
         arguments:
             $jwtSecret: '%jwt_secret%'
+
+    App\Service\RateLimiter:
+        arguments:
+            $redisHost: '%redis_host%'
+            $redisPort: '%redis_port%'

@@ -5,7 +5,11 @@ RUN apk add --no-cache \
     supervisor \
     sqlite \
     sqlite-dev \
-    && docker-php-ext-install pdo pdo_sqlite
+    $PHPIZE_DEPS \
+    && docker-php-ext-install pdo pdo_sqlite \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && apk del $PHPIZE_DEPS
 
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
