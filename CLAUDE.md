@@ -1,6 +1,6 @@
 # 1-on-1 Meetings Application
 
-Web-приложение для тимлида для управления 1-1 встречами с подчинёнными.
+Web-приложение для тимлида для управления 1-1 встречами с подчинёнными. Позволяет вести список сотрудников с досье, формировать повестку к встречам (с категориями и drag & drop), фиксировать результаты встреч и хранить историю.
 
 ## Быстрый старт
 
@@ -8,74 +8,50 @@ Web-приложение для тимлида для управления 1-1 �
 # Запуск
 docker-compose up --build
 
-# Доступ: http://1on1.bx:3000 (требует записи в /etc/hosts)
-# Или: http://localhost:3000
+# Доступ
+# http://localhost:3000
+# http://1on1.bx:3000  (требует записи в /etc/hosts)
 ```
+
+При первом запуске приложение попросит задать пароль (минимум 12 символов).
+
+### Демо режим
+
+Для тестирования и демонстрации доступен режим с предзаполненными данными:
+
+```bash
+./setup-demo.sh          # Создать и переключиться на демо-базу
+./switch-to-demo.sh      # Переключиться на демо (если уже создана)
+./switch-to-prod.sh      # Вернуться на продовскую базу
+```
+
+**Демо данные:** пароль `demo12345678`, 6 сотрудников, 6 встреч, 24 пункта повестки (все категории).
+
+При первом запуске `setup-demo.sh` автоматически создаст резервную копию продовской базы в `app.prod.db`.
 
 ## Стек технологий
 
 - **Backend**: Symfony 7 (PHP 8.3) + Doctrine ORM + SQLite
 - **Frontend**: React 18 + TypeScript + Vite + Tailwind CSS
 - **Контейнеризация**: Docker + docker-compose
-- **Кэш/Rate Limiting**: Redis 7
+- **Rate Limiting**: Redis 7
 - **Локализация**: English / Русский
-
-## Безопасность
-
-Приложение содержит личные данные сотрудников, поэтому реализованы следующие меры защиты:
-
-### Сетевая безопасность
-- **Порт закрыт для внешнего доступа**: приложение доступно только на `127.0.0.1:3000` (localhost)
-- Для доступа из локальной сети настройте reverse proxy (nginx/Traefik) с дополнительной защитой
-
-### Аутентификация
-- **Минимальная длина пароля**: 12 символов
-- **Безопасное хранение**: пароль хешируется с помощью `password_hash()` (bcrypt)
-- **JWT токены**: httpOnly cookie, срок жизни 7 дней
-- **Длинные секреты**: APP_SECRET и JWT_SECRET по 64 символа (сгенерированы через `openssl rand -hex 32`)
-
-### Защита от атак
-- **Rate limiting**: максимум 5 неудачных попыток входа за 5 минут
-- Блокировка по IP адресу при превышении лимита
-- **CSRF защита**: SameSite cookie policy ('lax')
-
-### Резервное копирование
-```bash
-# Создать backup базы данных
-./backup.sh
-
-# Восстановить из backup'а
-./restore.sh
-
-# Backup'ы хранятся в ./backups/ (сжатые .gz)
-# Автоматическая очистка backup'ов старше 30 дней
-```
-
-### Дополнительные рекомендации
-- Регулярно создавайте backup БД (настройте cron: `0 2 * * * /path/to/backup.sh`)
-- Храните backup'ы в безопасном месте (отдельный диск, облако)
-- Используйте сложные пароли (минимум 12 символов, разные типы символов)
-- Не выкладывайте `.env` файл в публичные репозитории
-
-### Сброс пароля
-```bash
-# Полная пересоздание БД (ПОТЕРЯ ВСЕХ ДАННЫХ!)
-docker exec 1on1-backend php bin/init-db.php
-
-# Или только сброс пароля (данные сохраняются)
-docker exec 1on1-backend sqlite3 /app/var/data/app.db \
-  "UPDATE settings SET password_hash = NULL WHERE id = 1"
-```
 
 ## Структура проекта
 
 ```
-/Volumes/projects/1on1/
-├── docker-compose.yml          # Оркестрация контейнеров
-├── .env                        # APP_SECRET, JWT_SECRET
-├── data/                       # SQLite данные (volume)
+├── docker-compose.yml           # Оркестрация контейнеров
+├── .env                         # APP_SECRET, JWT_SECRET, USE_DEMO_DB
+├── SECURITY.md                  # Документация по безопасности
+├── data/                        # SQLite данные (volume)
+├── backups/                     # Резервные копии БД (.gz)
+├── backup.sh                    # Скрипт создания backup'а
+├── restore.sh                   # Скрипт восстановления из backup'а
+├── setup-demo.sh                # Создание демо-базы
+├── switch-to-demo.sh            # Переключение на демо
+├── switch-to-prod.sh            # Переключение на продовскую базу
 │
-├── backend/                    # Symfony API
+├── backend/                     # Symfony API
 │   ├── Dockerfile
 │   ├── composer.json
 │   ├── config/
@@ -88,7 +64,8 @@ docker exec 1on1-backend sqlite3 /app/var/data/app.db \
 │   ├── public/index.php
 │   ├── bin/
 │   │   ├── console
-│   │   └── init-db.php         # Инициализация SQLite схемы + миграции
+│   │   ├── init-db.php          # Инициализация SQLite схемы + миграции
+│   │   └── init-demo-db.php     # Наполнение демо-данными
 │   ├── docker/
 │   │   ├── nginx.conf
 │   │   ├── supervisord.conf
@@ -111,38 +88,40 @@ docker exec 1on1-backend sqlite3 /app/var/data/app.db \
 │       │   ├── MeetingRepository.php
 │       │   └── AgendaItemRepository.php
 │       └── Service/
-│           └── AuthService.php
+│           ├── AuthService.php
+│           └── RateLimiter.php  # Rate limiting через Redis
 │
-└── frontend/                   # React SPA
+└── frontend/                    # React SPA
     ├── Dockerfile
     ├── package.json
     ├── vite.config.ts
     ├── tsconfig.json
     ├── tailwind.config.js
     ├── postcss.config.js
-    ├── nginx.conf              # Проксирование /api/* на backend
+    ├── nginx.conf               # Проксирование /api/* на backend
     ├── index.html
     └── src/
         ├── main.tsx
         ├── index.css
-        ├── App.tsx             # Роутинг + AuthContext + I18nProvider
+        ├── App.tsx              # Роутинг + AuthContext + I18nProvider
         ├── api/
-        │   └── client.ts       # Axios + типы + API функции
-        ├── i18n/               # Локализация
+        │   └── client.ts        # Axios + типы + API функции
+        ├── i18n/                 # Локализация
         │   ├── index.ts
         │   ├── I18nContext.tsx
-        │   └── translations.ts # Переводы EN/RU
+        │   └── translations.ts  # Переводы EN/RU
         ├── pages/
-        │   ├── SetupPage.tsx   # Первоначальная установка пароля
-        │   ├── LoginPage.tsx   # Вход по паролю
-        │   ├── HomePage.tsx    # Список сотрудников
+        │   ├── SetupPage.tsx    # Первоначальная установка пароля
+        │   ├── LoginPage.tsx    # Вход по паролю
+        │   ├── HomePage.tsx     # Список сотрудников
         │   └── EmployeePage.tsx # Детали + повестка + история
         └── components/
             ├── EmployeeCard.tsx
-            ├── AgendaList.tsx      # Drag & drop + категории
+            ├── AgendaList.tsx       # Drag & drop + категории
             ├── MeetingForm.tsx
             ├── MeetingHistory.tsx
-            └── LanguageSwitcher.tsx # Переключатель языка
+            ├── ClockWidget.tsx      # Виджет часов
+            └── LanguageSwitcher.tsx  # Переключатель языка
 ```
 
 ## Модель данных
@@ -158,7 +137,7 @@ docker exec 1on1-backend sqlite3 /app/var/data/app.db \
 - `position`: string|null
 - `bio`: text|null (досье: город, семейное положение, хобби и т.д.)
 - `createdAt`: DateTime
-- Relations: OneToMany → Meeting, AgendaItem
+- Relations: OneToMany -> Meeting, AgendaItem
 
 ### Meeting (Встреча)
 - `id`: int (PK, auto)
@@ -189,103 +168,102 @@ docker exec 1on1-backend sqlite3 /app/var/data/app.db \
 
 ### Аутентификация (публичные)
 ```
-GET  /api/auth/check   → { needsSetup: bool, isAuthenticated: bool }
-POST /api/auth/setup   → { password } → устанавливает пароль (только если needsSetup)
-POST /api/auth/login   → { password } → возвращает JWT cookie
-POST /api/auth/logout  → очищает cookie
+GET  /api/auth/check   -> { needsSetup, isAuthenticated }
+POST /api/auth/setup   -> { password } (только если needsSetup)
+POST /api/auth/login   -> { password } -> JWT cookie
+POST /api/auth/logout  -> очищает cookie
 ```
 
 ### Сотрудники (требуют авторизации)
 ```
-GET    /api/employees          → список с lastMeetingDate и agendaCount
-POST   /api/employees          → { name, position?, bio? }
+GET    /api/employees          -> список с lastMeetingDate и agendaCount
+POST   /api/employees          -> { name, position?, bio? }
 GET    /api/employees/{id}
-PUT    /api/employees/{id}     → { name?, position?, bio? }
-DELETE /api/employees/{id}     → каскадно удаляет meetings и agenda
+PUT    /api/employees/{id}     -> { name?, position?, bio? }
+DELETE /api/employees/{id}     -> каскадно удаляет meetings и agenda
 ```
 
 ### Повестка
 ```
-GET    /api/employees/{id}/agenda      → список пунктов (сортировка по sortOrder)
-POST   /api/employees/{id}/agenda      → { content, category? }
-PUT    /api/agenda/{id}                → { content?, isDiscussed?, category? }
-PUT    /api/employees/{id}/agenda/reorder → { itemIds: number[] } # изменение порядка
+GET    /api/employees/{id}/agenda          -> список (сортировка по sortOrder)
+POST   /api/employees/{id}/agenda          -> { content, category? }
+PUT    /api/agenda/{id}                    -> { content?, isDiscussed?, category? }
+PUT    /api/employees/{id}/agenda/reorder  -> { itemIds: number[] }
 DELETE /api/agenda/{id}
 ```
 
 ### Встречи
 ```
-GET    /api/employees/{id}/meetings    → история встреч (включает discussedTopics)
-POST   /api/employees/{id}/meetings    → { notes, date?, discussedTopics?: string[] }
+GET    /api/employees/{id}/meetings    -> история встреч
+POST   /api/employees/{id}/meetings    -> { notes, date?, discussedTopics?: string[] }
 GET    /api/meetings/{id}
 ```
 
-## Локализация
+## Безопасность
 
-Приложение поддерживает два языка:
-- 🇬🇧 English
-- 🇷🇺 Русский
+Подробная документация в [SECURITY.md](SECURITY.md).
 
-### Как работает
-- Язык автоматически определяется по настройкам браузера
-- Выбор сохраняется в `localStorage`
-- Переключатель доступен на страницах входа и в хедере
-
-### Добавление переводов
-1. Открыть `frontend/src/i18n/translations.ts`
-2. Добавить ключ в оба объекта `en` и `ru`
-3. Использовать в компоненте: `const { t } = useI18n(); t('ключ')`
-
-## Аутентификация
-
-- Пароль хранится как `password_hash()` в таблице settings
+- Доступ только на `127.0.0.1:3000` (localhost)
+- Пароль минимум 12 символов, хранится как bcrypt хеш
 - JWT токен в httpOnly cookie, срок жизни 7 дней
-- Секрет для JWT: переменная `JWT_SECRET` из .env
+- Rate limiting: 5 неудачных попыток входа за 5 минут (Redis)
+- CSRF защита: SameSite cookie policy
+
+### Резервное копирование
+```bash
+./backup.sh              # Создать backup (сжатый .gz, хранится в ./backups/)
+./restore.sh             # Восстановить из backup'а
+```
 
 ### Сброс пароля
 ```bash
-docker exec -it 1on1-backend-1 php bin/init-db.php  # пересоздать БД (потеря данных)
-# или
-docker exec -it 1on1-backend-1 sqlite3 /app/var/data/app.db "UPDATE settings SET password_hash = NULL WHERE id = 1"
+# Сброс пароля (данные сохраняются)
+docker exec 1on1-backend sqlite3 /app/var/data/app.db \
+  "UPDATE settings SET password_hash = NULL WHERE id = 1"
+
+# Полная пересоздание БД (ПОТЕРЯ ВСЕХ ДАННЫХ!)
+docker exec 1on1-backend php bin/init-db.php
 ```
 
 ## Docker
 
 ### Контейнеры
-- `1on1-redis`: Redis 7 (rate limiting, maxmemory 64MB)
-- `1on1-backend`: PHP-FPM + Nginx + Supervisor + PHP Redis extension
-- `1on1-frontend`: Nginx со статикой + проксирование API
+- `1on1-redis` — Redis 7 (rate limiting, maxmemory 64MB)
+- `1on1-backend` — PHP-FPM 8.3 + Nginx + Supervisor
+- `1on1-frontend` — Nginx со статикой + проксирование API
 
 ### Volumes
-- `./data:/app/var/data` - SQLite база данных
+- `./data:/app/var/data` — SQLite база данных
 
 ### Порты
-- `127.0.0.1:3000` - фронтенд (только localhost)
+- `127.0.0.1:3000` — фронтенд (только localhost)
 
 ### Пересборка
 ```bash
-docker-compose down
-docker-compose up --build
+docker-compose down && docker-compose up --build
 ```
 
-### Миграция базы данных
-```bash
-docker exec -it 1on1-backend-1 php bin/init-db.php
-```
+## Локализация
+
+- English / Русский
+- Язык определяется по настройкам браузера, выбор сохраняется в `localStorage`
+- Переключатель на страницах входа и в хедере
+
+### Добавление переводов
+1. Добавить ключ в `en` и `ru` в `frontend/src/i18n/translations.ts`
+2. Использовать: `const { t } = useI18n(); t('ключ')`
 
 ## Разработка
 
 ### Backend (без Docker)
 ```bash
-cd backend
-composer install
+cd backend && composer install
 php -S localhost:8080 -t public
 ```
 
 ### Frontend (без Docker)
 ```bash
-cd frontend
-npm install
+cd frontend && npm install
 npm run dev  # http://localhost:5173, прокси на localhost:8080
 ```
 
@@ -293,13 +271,13 @@ npm run dev  # http://localhost:5173, прокси на localhost:8080
 
 ### Добавить поле к сущности
 1. Изменить Entity в `backend/src/Entity/`
-2. Обновить схему в `backend/bin/init-db.php` (добавить миграцию)
-3. Добавить в контроллер сериализацию нового поля
+2. Добавить миграцию в `backend/bin/init-db.php`
+3. Добавить сериализацию в контроллере
 4. Обновить типы в `frontend/src/api/client.ts`
 5. Использовать в компонентах
 
 ### Добавить новый endpoint
-1. Создать метод в контроллере с атрибутом `#[Route(...)]`
+1. Создать метод в контроллере с `#[Route(...)]`
 2. Добавить проверку авторизации: `if ($error = $this->checkAuth($request)) return $error;`
 3. Добавить функцию в `frontend/src/api/client.ts`
 
@@ -309,6 +287,6 @@ npm run dev  # http://localhost:5173, прокси на localhost:8080
 3. Обернуть в `<ProtectedRoute>` если требует авторизации
 
 ### Добавить новый язык
-1. Добавить объект с переводами в `frontend/src/i18n/translations.ts`
-2. Добавить язык в `frontend/src/components/LanguageSwitcher.tsx`
+1. Добавить переводы в `frontend/src/i18n/translations.ts`
+2. Добавить в `frontend/src/components/LanguageSwitcher.tsx`
 3. Обновить `detectLanguage()` в `frontend/src/i18n/I18nContext.tsx`
