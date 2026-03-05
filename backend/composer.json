@@ -4,14 +4,15 @@
     "license": "proprietary",
     "require": {
         "php": ">=8.3",
-        "symfony/framework-bundle": "^7.0",
-        "symfony/runtime": "^7.0",
-        "doctrine/orm": "^3.0",
         "doctrine/doctrine-bundle": "^2.11",
-        "symfony/validator": "^7.0",
-        "symfony/serializer": "^7.0",
-        "symfony/property-access": "^7.0",
+        "doctrine/orm": "^3.0",
         "firebase/php-jwt": "^6.10",
+        "symfony/framework-bundle": "^7.0",
+        "symfony/http-client": "*",
+        "symfony/property-access": "^7.0",
+        "symfony/runtime": "^7.0",
+        "symfony/serializer": "^7.0",
+        "symfony/validator": "^7.0",
         "symfony/yaml": "^7.0"
     },
     "require-dev": {

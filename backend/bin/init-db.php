@@ -77,4 +77,14 @@ if (!in_array('bio', $employeeCols)) {
     $pdo->exec("ALTER TABLE employees ADD COLUMN bio TEXT");
 }
 
+// Migration: add bitrix_id and avatar_url columns to employees if not exists
+$employeeCols2 = $pdo->query("PRAGMA table_info(employees)")->fetchAll(PDO::FETCH_COLUMN, 1);
+if (!in_array('bitrix_id', $employeeCols2)) {
+    $pdo->exec("ALTER TABLE employees ADD COLUMN bitrix_id INTEGER");
+    $pdo->exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_employees_bitrix_id ON employees(bitrix_id)");
+}
+if (!in_array('avatar_url', $employeeCols2)) {
+    $pdo->exec("ALTER TABLE employees ADD COLUMN avatar_url VARCHAR(500)");
+}
+
 echo "Database initialized successfully\n";

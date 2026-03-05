@@ -2,6 +2,7 @@ parameters:
     jwt_secret: '%env(JWT_SECRET)%'
     redis_host: '%env(REDIS_HOST)%'
     redis_port: '%env(int:REDIS_PORT)%'
+    bitrix24_webhook_url: '%env(default::BITRIX24_WEBHOOK_URL)%'
 
 services:
     _defaults:
@@ -22,3 +23,7 @@ services:
         arguments:
             $redisHost: '%redis_host%'
             $redisPort: '%redis_port%'
+
+    App\Service\BitrixService:
+        arguments:
+            $webhookUrl: '%bitrix24_webhook_url%'

@@ -15,9 +15,17 @@ export interface Employee {
   name: string
   position: string | null
   bio: string | null
+  bitrixId: number | null
+  avatarUrl: string | null
   lastMeetingDate: string | null
   agendaCount: number
   createdAt: string
+}
+
+export interface BitrixUserPreview {
+  name: string
+  position: string | null
+  avatarUrl: string | null
 }
 
 export type AgendaCategory = 'note' | 'positive' | 'warning' | 'problem'
@@ -49,9 +57,11 @@ export const authApi = {
 export const employeesApi = {
   list: () => api.get<Employee[]>('/employees'),
   get: (id: number) => api.get<Employee>(`/employees/${id}`),
-  create: (data: { name: string; position?: string; bio?: string }) => api.post<Employee>('/employees', data),
-  update: (id: number, data: { name?: string; position?: string; bio?: string }) => api.put<Employee>(`/employees/${id}`, data),
+  create: (data: { name: string; position?: string; bio?: string; bitrixId?: number; avatarUrl?: string }) => api.post<Employee>('/employees', data),
+  update: (id: number, data: { name?: string; position?: string; bio?: string; bitrixId?: number | null; avatarUrl?: string | null }) => api.put<Employee>(`/employees/${id}`, data),
   delete: (id: number) => api.delete(`/employees/${id}`),
+  bitrixStatus: () => api.get<{ configured: boolean }>('/employees/bitrix-status'),
+  bitrixPreview: (bitrixId: number) => api.get<BitrixUserPreview>(`/employees/bitrix-preview/${bitrixId}`),
 }
 
 export const agendaApi = {

@@ -34,6 +34,8 @@ export const translations = {
     bio: 'Personal Info',
     bioPlaceholder: 'Location, family status, hobbies, etc...',
     adding: 'Adding...',
+    searchEmployees: 'Search employees...',
+    noSearchResults: 'No employees found',
     noEmployees: 'No employees yet. Add your first employee to get started.',
     deleteEmployeeConfirm: 'Are you sure you want to delete this employee? All meetings and agenda items will be deleted.',
     topics: 'topics',
@@ -65,6 +67,23 @@ export const translations = {
     noMeetingsHistory: 'No meetings yet. Conduct your first 1-1 to get started.',
     noNotes: 'No notes',
     discussedLabel: 'Discussed:',
+
+    // Clock
+    changeTimezone: 'Change timezone',
+    searchTimezone: 'Search timezone...',
+    noResults: 'Nothing found',
+
+    // Bitrix24
+    bitrixId: 'Bitrix24 ID',
+    bitrixIdPlaceholder: 'Enter Bitrix24 user ID',
+    fromBitrix: 'From Bitrix24',
+    manual: 'Manual',
+    lookup: 'Find',
+    linkToBitrix: 'Link to Bitrix24',
+    link: 'Link',
+    bitrixLookupFailed: 'User not found in Bitrix24',
+    bitrixAlreadyLinked: 'This Bitrix24 ID is already linked to another employee',
+    linking: 'Linking...',
 
     // Language
     language: 'Language',
@@ -104,6 +123,8 @@ export const translations = {
     bio: 'Личная информация',
     bioPlaceholder: 'Город, семейное положение, хобби и т.д...',
     adding: 'Добавление...',
+    searchEmployees: 'Поиск сотрудников...',
+    noSearchResults: 'Сотрудники не найдены',
     noEmployees: 'Пока нет сотрудников. Добавьте первого сотрудника для начала работы.',
     deleteEmployeeConfirm: 'Вы уверены, что хотите удалить этого сотрудника? Все встречи и темы для обсуждения будут удалены.',
     topics: 'тем',
@@ -135,6 +156,23 @@ export const translations = {
     noMeetingsHistory: 'Пока нет встреч. Проведите первую 1-1 для начала.',
     noNotes: 'Нет заметок',
     discussedLabel: 'Обсудили:',
+
+    // Clock
+    changeTimezone: 'Сменить часовой пояс',
+    searchTimezone: 'Поиск часового пояса...',
+    noResults: 'Ничего не найдено',
+
+    // Bitrix24
+    bitrixId: 'Bitrix24 ID',
+    bitrixIdPlaceholder: 'Введите ID пользователя Bitrix24',
+    fromBitrix: 'Из Bitrix24',
+    manual: 'Вручную',
+    lookup: 'Найти',
+    linkToBitrix: 'Привязать к Bitrix24',
+    link: 'Привязать',
+    bitrixLookupFailed: 'Пользователь не найден в Bitrix24',
+    bitrixAlreadyLinked: 'Этот Bitrix24 ID уже привязан к другому сотруднику',
+    linking: 'Привязка...',
 
     // Language
     language: 'Язык',

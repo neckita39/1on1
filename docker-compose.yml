@@ -14,6 +14,8 @@ services:
   backend:
     build: ./backend
     container_name: 1on1-backend
+    dns:
+      - 8.8.8.8
     volumes:
       - ./data:/app/var/data
     environment:
@@ -22,6 +24,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - BITRIX24_WEBHOOK_URL=${BITRIX24_WEBHOOK_URL:-}
     depends_on:
       redis:
         condition: service_healthy

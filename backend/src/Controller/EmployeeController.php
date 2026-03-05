@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Employee;
 use App\Repository\EmployeeRepository;
 use App\Service\AuthService;
+use App\Service\BitrixService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -18,7 +19,8 @@ class EmployeeController extends AbstractController
     public function __construct(
         private EmployeeRepository $employeeRepository,
         private EntityManagerInterface $em,
-        private AuthService $authService
+        private AuthService $authService,
+        private BitrixService $bitrixService
     ) {}
 
     private function checkAuth(Request $request): ?JsonResponse
@@ -41,6 +43,8 @@ class EmployeeController extends AbstractController
             'name' => $e->getName(),
             'position' => $e->getPosition(),
             'bio' => $e->getBio(),
+            'bitrixId' => $e->getBitrixId(),
+            'avatarUrl' => $e->getAvatarUrl(),
             'lastMeetingDate' => $e->getLastMeeting()?->getDate()->format('Y-m-d'),
             'agendaCount' => $e->getActiveAgendaCount(),
             'createdAt' => $e->getCreatedAt()->format('c')
@@ -58,10 +62,21 @@ class EmployeeController extends AbstractController
             return $this->json(['error' => 'Name is required'], Response::HTTP_BAD_REQUEST);
         }
 
+        $bitrixId = isset($data['bitrixId']) ? (int)$data['bitrixId'] : null;
+
+        if ($bitrixId !== null) {
+            $existing = $this->employeeRepository->findOneBy(['bitrixId' => $bitrixId]);
+            if ($existing) {
+                return $this->json(['error' => 'Employee with this Bitrix24 ID already exists'], Response::HTTP_CONFLICT);
+            }
+        }
+
         $employee = new Employee();
         $employee->setName($data['name']);
         $employee->setPosition($data['position'] ?? null);
         $employee->setBio($data['bio'] ?? null);
+        $employee->setBitrixId($bitrixId);
+        $employee->setAvatarUrl($data['avatarUrl'] ?? null);
 
         $this->em->persist($employee);
         $this->em->flush();
@@ -71,8 +86,40 @@ class EmployeeController extends AbstractController
             'name' => $employee->getName(),
             'position' => $employee->getPosition(),
             'bio' => $employee->getBio(),
+            'bitrixId' => $employee->getBitrixId(),
+            'avatarUrl' => $employee->getAvatarUrl(),
             'createdAt' => $employee->getCreatedAt()->format('c')
         ], Response::HTTP_CREATED);
+    }
+
+    #[Route('/bitrix-status', methods: ['GET'])]
+    public function bitrixStatus(Request $request): JsonResponse
+    {
+        if ($error = $this->checkAuth($request)) return $error;
+
+        return $this->json(['configured' => $this->bitrixService->isConfigured()]);
+    }
+
+    #[Route('/bitrix-preview/{bitrixId}', methods: ['GET'])]
+    public function bitrixPreview(Request $request, int $bitrixId): JsonResponse
+    {
+        if ($error = $this->checkAuth($request)) return $error;
+
+        if (!$this->bitrixService->isConfigured()) {
+            return $this->json(['error' => 'Bitrix24 is not configured'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $existing = $this->employeeRepository->findOneBy(['bitrixId' => $bitrixId]);
+        if ($existing) {
+            return $this->json(['error' => 'Employee with this Bitrix24 ID already exists', 'employeeId' => $existing->getId()], Response::HTTP_CONFLICT);
+        }
+
+        $user = $this->bitrixService->getUser($bitrixId);
+        if (!$user) {
+            return $this->json(['error' => 'User not found in Bitrix24'], Response::HTTP_NOT_FOUND);
+        }
+
+        return $this->json($user);
     }
 
     #[Route('/{id}', methods: ['GET'])]
@@ -91,6 +138,8 @@ class EmployeeController extends AbstractController
             'name' => $employee->getName(),
             'position' => $employee->getPosition(),
             'bio' => $employee->getBio(),
+            'bitrixId' => $employee->getBitrixId(),
+            'avatarUrl' => $employee->getAvatarUrl(),
             'lastMeetingDate' => $employee->getLastMeeting()?->getDate()->format('Y-m-d'),
             'agendaCount' => $employee->getActiveAgendaCount(),
             'createdAt' => $employee->getCreatedAt()->format('c')
@@ -119,6 +168,19 @@ class EmployeeController extends AbstractController
         if (array_key_exists('bio', $data)) {
             $employee->setBio($data['bio']);
         }
+        if (array_key_exists('bitrixId', $data)) {
+            $bitrixId = $data['bitrixId'] !== null ? (int)$data['bitrixId'] : null;
+            if ($bitrixId !== null) {
+                $existing = $this->employeeRepository->findOneBy(['bitrixId' => $bitrixId]);
+                if ($existing && $existing->getId() !== $employee->getId()) {
+                    return $this->json(['error' => 'Employee with this Bitrix24 ID already exists'], Response::HTTP_CONFLICT);
+                }
+            }
+            $employee->setBitrixId($bitrixId);
+        }
+        if (array_key_exists('avatarUrl', $data)) {
+            $employee->setAvatarUrl($data['avatarUrl']);
+        }
 
         $this->em->flush();
 
@@ -127,6 +189,8 @@ class EmployeeController extends AbstractController
             'name' => $employee->getName(),
             'position' => $employee->getPosition(),
             'bio' => $employee->getBio(),
+            'bitrixId' => $employee->getBitrixId(),
+            'avatarUrl' => $employee->getAvatarUrl(),
             'createdAt' => $employee->getCreatedAt()->format('c')
         ]);
     }

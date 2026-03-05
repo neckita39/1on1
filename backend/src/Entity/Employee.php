@@ -26,6 +26,12 @@ class Employee
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $bio = null;
 
+    #[ORM\Column(name: 'bitrix_id', type: Types::INTEGER, nullable: true, unique: true)]
+    private ?int $bitrixId = null;
+
+    #[ORM\Column(name: 'avatar_url', type: Types::STRING, length: 500, nullable: true)]
+    private ?string $avatarUrl = null;
+
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private \DateTime $createdAt;
 
@@ -79,6 +85,28 @@ class Employee
     public function setBio(?string $bio): self
     {
         $this->bio = $bio;
+        return $this;
+    }
+
+    public function getBitrixId(): ?int
+    {
+        return $this->bitrixId;
+    }
+
+    public function setBitrixId(?int $bitrixId): self
+    {
+        $this->bitrixId = $bitrixId;
+        return $this;
+    }
+
+    public function getAvatarUrl(): ?string
+    {
+        return $this->avatarUrl;
+    }
+
+    public function setAvatarUrl(?string $avatarUrl): self
+    {
+        $this->avatarUrl = $avatarUrl;
         return $this;
     }
 
