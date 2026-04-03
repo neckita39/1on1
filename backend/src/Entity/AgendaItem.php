@@ -36,6 +36,9 @@ class AgendaItem
     #[ORM\Column(type: Types::INTEGER)]
     private int $sortOrder = 0;
 
+    #[ORM\Column(type: Types::BOOLEAN)]
+    private bool $isImportant = false;
+
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private \DateTime $createdAt;
 
@@ -104,6 +107,17 @@ class AgendaItem
     public function setSortOrder(int $sortOrder): self
     {
         $this->sortOrder = $sortOrder;
+        return $this;
+    }
+
+    public function isImportant(): bool
+    {
+        return $this->isImportant;
+    }
+
+    public function setIsImportant(bool $isImportant): self
+    {
+        $this->isImportant = $isImportant;
         return $this;
     }
 

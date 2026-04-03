@@ -49,6 +49,7 @@ class AgendaController extends AbstractController
             'id' => $item->getId(),
             'content' => $item->getContent(),
             'isDiscussed' => $item->isDiscussed(),
+            'isImportant' => $item->isImportant(),
             'category' => $item->getCategory(),
             'sortOrder' => $item->getSortOrder(),
             'createdAt' => $item->getCreatedAt()->format('c')
@@ -95,6 +96,7 @@ class AgendaController extends AbstractController
             'id' => $item->getId(),
             'content' => $item->getContent(),
             'isDiscussed' => $item->isDiscussed(),
+            'isImportant' => $item->isImportant(),
             'category' => $item->getCategory(),
             'sortOrder' => $item->getSortOrder(),
             'createdAt' => $item->getCreatedAt()->format('c')
@@ -122,6 +124,9 @@ class AgendaController extends AbstractController
         if (isset($data['category'])) {
             $item->setCategory($data['category']);
         }
+        if (isset($data['isImportant'])) {
+            $item->setIsImportant((bool) $data['isImportant']);
+        }
 
         $this->em->flush();
 
@@ -129,10 +134,33 @@ class AgendaController extends AbstractController
             'id' => $item->getId(),
             'content' => $item->getContent(),
             'isDiscussed' => $item->isDiscussed(),
+            'isImportant' => $item->isImportant(),
             'category' => $item->getCategory(),
             'sortOrder' => $item->getSortOrder(),
             'createdAt' => $item->getCreatedAt()->format('c')
         ]);
+    }
+
+    #[Route('/api/agenda/important', methods: ['GET'])]
+    public function listImportant(Request $request): JsonResponse
+    {
+        if ($error = $this->checkAuth($request)) return $error;
+
+        $items = $this->agendaItemRepository->findBy(
+            ['isImportant' => true],
+            ['createdAt' => 'DESC']
+        );
+
+        return $this->json(array_map(fn(AgendaItem $item) => [
+            'id' => $item->getId(),
+            'content' => $item->getContent(),
+            'category' => $item->getCategory(),
+            'isDiscussed' => $item->isDiscussed(),
+            'isImportant' => $item->isImportant(),
+            'createdAt' => $item->getCreatedAt()->format('c'),
+            'employeeId' => $item->getEmployee()->getId(),
+            'employeeName' => $item->getEmployee()->getName(),
+        ], $items));
     }
 
     #[Route('/api/employees/{employeeId}/agenda/reorder', methods: ['PUT'])]

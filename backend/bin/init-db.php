@@ -71,6 +71,12 @@ if (!in_array('sort_order', $agendaCols)) {
     $pdo->exec("UPDATE agenda_items SET sort_order = id");
 }
 
+// Migration: add is_important column to agenda_items if not exists
+$agendaCols3 = $pdo->query("PRAGMA table_info(agenda_items)")->fetchAll(PDO::FETCH_COLUMN, 1);
+if (!in_array('is_important', $agendaCols3)) {
+    $pdo->exec("ALTER TABLE agenda_items ADD COLUMN is_important INTEGER NOT NULL DEFAULT 0");
+}
+
 // Migration: add bio column to employees if not exists
 $employeeCols = $pdo->query("PRAGMA table_info(employees)")->fetchAll(PDO::FETCH_COLUMN, 1);
 if (!in_array('bio', $employeeCols)) {
