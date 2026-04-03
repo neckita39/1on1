@@ -55,6 +55,15 @@ export default function AgendaList({ employeeId, items, onUpdate }: Props) {
     }
   }
 
+  const handleToggleImportant = async (item: AgendaItem) => {
+    try {
+      await agendaApi.update(item.id, { isImportant: !item.isImportant })
+      onUpdate()
+    } catch (error) {
+      console.error('Failed to toggle important', error)
+    }
+  }
+
   const handleCategoryChange = async (item: AgendaItem, category: AgendaCategory) => {
     try {
       await agendaApi.update(item.id, { category })
@@ -217,6 +226,21 @@ export default function AgendaList({ employeeId, items, onUpdate }: Props) {
                       className="w-4 h-4 text-blue-600"
                     />
                   </div>
+                  <button
+                    onClick={() => handleToggleImportant(item)}
+                    className="flex-shrink-0 pt-0.5"
+                    title={t('important')}
+                  >
+                    {item.isImportant ? (
+                      <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4 text-gray-300 hover:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                      </svg>
+                    )}
+                  </button>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="break-words">{item.content}</span>
@@ -264,6 +288,21 @@ export default function AgendaList({ employeeId, items, onUpdate }: Props) {
                       onChange={() => handleToggle(item)}
                       className="w-4 h-4 text-blue-600 mt-0.5"
                     />
+                    <button
+                      onClick={() => handleToggleImportant(item)}
+                      className="flex-shrink-0 mt-0.5"
+                      title={t('important')}
+                    >
+                      {item.isImportant ? (
+                        <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4 text-gray-300 hover:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                        </svg>
+                      )}
+                    </button>
                     <div className="flex-1 min-w-0">
                       <span className="line-through break-words">{item.content}</span>
                       <div className="text-xs text-gray-500 mt-1">
