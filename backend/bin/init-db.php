@@ -93,4 +93,15 @@ if (!in_array('avatar_url', $employeeCols2)) {
     $pdo->exec("ALTER TABLE employees ADD COLUMN avatar_url VARCHAR(500)");
 }
 
+// Create scrum_notes table
+$pdo->exec("
+    CREATE TABLE IF NOT EXISTS scrum_notes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        content TEXT NOT NULL,
+        date DATETIME NOT NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+");
+
 echo "Database initialized successfully\n";
