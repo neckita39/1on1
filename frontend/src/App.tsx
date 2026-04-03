@@ -6,6 +6,9 @@ import LoginPage from './pages/LoginPage'
 import SetupPage from './pages/SetupPage'
 import HomePage from './pages/HomePage'
 import EmployeePage from './pages/EmployeePage'
+import DailyPage from './pages/DailyPage'
+import ImportantPage from './pages/ImportantPage'
+import ScrumPage from './pages/ScrumPage'
 
 interface AuthContextType {
   status: AuthStatus | null
@@ -82,6 +85,30 @@ function App() {
               element={
                 <ProtectedRoute>
                   <HomePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/daily"
+              element={
+                <ProtectedRoute>
+                  <DailyPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/important"
+              element={
+                <ProtectedRoute>
+                  <ImportantPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/scrum"
+              element={
+                <ProtectedRoute>
+                  <ScrumPage />
                 </ProtectedRoute>
               }
             />

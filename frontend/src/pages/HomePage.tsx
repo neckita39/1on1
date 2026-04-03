@@ -120,12 +120,32 @@ export default function HomePage() {
       <main className="max-w-4xl mx-auto px-4 py-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-lg font-semibold text-gray-800">{t('employees')}</h2>
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700"
-          >
-            {t('addEmployee')}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => navigate('/daily')}
+              className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md text-sm hover:bg-gray-200"
+            >
+              {t('daily')}
+            </button>
+            <button
+              onClick={() => navigate('/important')}
+              className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md text-sm hover:bg-gray-200"
+            >
+              {t('important')}
+            </button>
+            <button
+              onClick={() => navigate('/scrum')}
+              className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md text-sm hover:bg-gray-200"
+            >
+              {t('scrum')}
+            </button>
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700"
+            >
+              {t('addEmployee')}
+            </button>
+          </div>
         </div>
 
         {employees.length > 0 && (
