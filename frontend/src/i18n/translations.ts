@@ -85,6 +85,37 @@ export const translations = {
     bitrixAlreadyLinked: 'This Bitrix24 ID is already linked to another employee',
     linking: 'Linking...',
 
+    // Daily
+    daily: 'Daily',
+    dailyTitle: 'Daily Standup',
+    dailyStart: 'Start',
+    dailyNext: 'Next',
+    dailySpeaking: 'Now speaking',
+    dailyDone: 'Done!',
+    dailyNotStarted: 'participants ready',
+    dailyRestart: 'Start over',
+    dailyAlreadySpoke: 'Already spoke',
+    dailyWaiting: 'Waiting',
+    dailyBack: 'Back',
+
+    // Important
+    important: 'Important',
+    importantTitle: 'Important Items',
+    noImportantItems: 'No important items yet.',
+    importantBack: 'Back',
+
+    // Scrum
+    scrum: 'Scrum of Scrums',
+    scrumTitle: 'Scrum of Scrums',
+    scrumNew: 'New Entry',
+    scrumDate: 'Date',
+    scrumContent: 'Notes',
+    scrumContentPlaceholder: 'Meeting notes...',
+    scrumNoEntries: 'No entries yet.',
+    scrumBack: 'Back',
+    scrumEdit: 'Edit',
+    scrumSave: 'Save',
+
     // Language
     language: 'Language',
   },
@@ -173,6 +204,37 @@ export const translations = {
     bitrixLookupFailed: 'Пользователь не найден в Bitrix24',
     bitrixAlreadyLinked: 'Этот Bitrix24 ID уже привязан к другому сотруднику',
     linking: 'Привязка...',
+
+    // Daily
+    daily: 'Дейлик',
+    dailyTitle: 'Дейли стендап',
+    dailyStart: 'Начать',
+    dailyNext: 'Следующий',
+    dailySpeaking: 'Сейчас выступает',
+    dailyDone: 'Готово!',
+    dailyNotStarted: 'участников готовы',
+    dailyRestart: 'Начать заново',
+    dailyAlreadySpoke: 'Уже выступили',
+    dailyWaiting: 'Ожидают',
+    dailyBack: 'Назад',
+
+    // Important
+    important: 'Важное',
+    importantTitle: 'Важные пункты',
+    noImportantItems: 'Нет важных пунктов.',
+    importantBack: 'Назад',
+
+    // Scrum
+    scrum: 'Скрам над скрамом',
+    scrumTitle: 'Скрам над скрамом',
+    scrumNew: 'Новая запись',
+    scrumDate: 'Дата',
+    scrumContent: 'Заметки',
+    scrumContentPlaceholder: 'Заметки о встрече...',
+    scrumNoEntries: 'Пока нет записей.',
+    scrumBack: 'Назад',
+    scrumEdit: 'Редактировать',
+    scrumSave: 'Сохранить',
 
     // Language
     language: 'Язык',

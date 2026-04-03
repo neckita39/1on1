@@ -34,9 +34,15 @@ export interface AgendaItem {
   id: number
   content: string
   isDiscussed: boolean
+  isImportant: boolean
   category: AgendaCategory
   sortOrder: number
   createdAt: string
+}
+
+export interface ImportantItem extends AgendaItem {
+  employeeId: number
+  employeeName: string
 }
 
 export interface Meeting {
@@ -68,11 +74,12 @@ export const agendaApi = {
   list: (employeeId: number) => api.get<AgendaItem[]>(`/employees/${employeeId}/agenda`),
   create: (employeeId: number, content: string, category?: AgendaCategory) =>
     api.post<AgendaItem>(`/employees/${employeeId}/agenda`, { content, category }),
-  update: (id: number, data: { content?: string; isDiscussed?: boolean; category?: AgendaCategory }) =>
+  update: (id: number, data: { content?: string; isDiscussed?: boolean; isImportant?: boolean; category?: AgendaCategory }) =>
     api.put<AgendaItem>(`/agenda/${id}`, data),
   delete: (id: number) => api.delete(`/agenda/${id}`),
   reorder: (employeeId: number, itemIds: number[]) =>
     api.put(`/employees/${employeeId}/agenda/reorder`, { itemIds }),
+  important: () => api.get<ImportantItem[]>('/agenda/important'),
 }
 
 export const meetingsApi = {
@@ -80,6 +87,22 @@ export const meetingsApi = {
   create: (employeeId: number, data: { notes: string; date?: string; discussedTopics?: string[] }) =>
     api.post<Meeting>(`/employees/${employeeId}/meetings`, data),
   get: (id: number) => api.get<Meeting>(`/meetings/${id}`),
+}
+
+export interface ScrumNote {
+  id: number
+  content: string
+  date: string
+  createdAt: string
+  updatedAt: string
+}
+
+export const scrumApi = {
+  list: () => api.get<ScrumNote[]>('/scrum-notes'),
+  create: (data: { content: string; date?: string }) =>
+    api.post<ScrumNote>('/scrum-notes', data),
+  update: (id: number, data: { content?: string; date?: string }) =>
+    api.put<ScrumNote>(`/scrum-notes/${id}`, data),
 }
 
 export default api
