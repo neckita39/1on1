@@ -1,216 +1,194 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { scrumApi, ScrumNote } from '../api/client'
-import { useI18n } from '../i18n'
+import { useMemo, useState } from 'react'
+import { scrumApi, ScrumNote, ScrumTab } from '../api/client'
+import { useShell } from '../layout/AppShell'
+import { Button, Card, Pill, formatDateRuFull } from '../ui'
+import { useToast } from '../ui/toast'
 
-export default function ScrumPage() {
-  const [notes, setNotes] = useState<ScrumNote[]>([])
-  const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
-  const [newContent, setNewContent] = useState('')
-  const [newDate, setNewDate] = useState(() => new Date().toISOString().split('T')[0])
+const TABS: { key: ScrumTab; label: string; hint: string; color: string }[] = [
+  { key: 'sos', label: 'Скрам над скрамом', hint: 'Что вынесли из 1-1 на уровень команды', color: '#0075FF' },
+  { key: 'topics', label: 'Общие темы', hint: 'Повторяется у нескольких человек', color: '#FAA72C' },
+  { key: 'decisions', label: 'Решения', hint: 'Что решили и кому сказали', color: '#1BCE7B' },
+]
+
+function NoteCard({ note, index, onSaved }: { note: ScrumNote; index: number; onSaved: () => void }) {
+  const [editing, setEditing] = useState(false)
+  const [content, setContent] = useState(note.content)
   const [saving, setSaving] = useState(false)
-  const [editingId, setEditingId] = useState<number | null>(null)
-  const [editContent, setEditContent] = useState('')
-  const [editDate, setEditDate] = useState('')
-  const navigate = useNavigate()
-  const { t, language } = useI18n()
+  const tab = TABS.find(t => t.key === note.tab) ?? TABS[0]
 
-  const loadNotes = async () => {
-    try {
-      const res = await scrumApi.list()
-      setNotes(res.data)
-    } catch (error) {
-      console.error('Failed to load scrum notes', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    loadNotes()
-  }, [])
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newContent.trim()) return
-
+  const save = async () => {
+    if (!content.trim()) return
     setSaving(true)
     try {
-      await scrumApi.create({ content: newContent.trim(), date: newDate })
-      setNewContent('')
-      setNewDate(new Date().toISOString().split('T')[0])
-      setShowForm(false)
-      loadNotes()
-    } catch (error) {
-      console.error('Failed to create scrum note', error)
+      await scrumApi.update(note.id, { content: content.trim() })
+      setEditing(false)
+      onSaved()
+    } catch (e) {
+      console.error('Failed to update note', e)
     } finally {
       setSaving(false)
     }
-  }
-
-  const handleStartEdit = (note: ScrumNote) => {
-    setEditingId(note.id)
-    setEditContent(note.content)
-    setEditDate(note.date)
-  }
-
-  const handleSaveEdit = async () => {
-    if (!editContent.trim() || editingId === null) return
-
-    setSaving(true)
-    try {
-      await scrumApi.update(editingId, { content: editContent.trim(), date: editDate })
-      setEditingId(null)
-      setEditContent('')
-      setEditDate('')
-      loadNotes()
-    } catch (error) {
-      console.error('Failed to update scrum note', error)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString + 'T00:00:00')
-    return date.toLocaleDateString(language === 'ru' ? 'ru-RU' : 'en-US', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    })
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold text-gray-900">{t('scrumTitle')}</h1>
-          <button
-            onClick={() => navigate('/')}
-            className="text-sm text-gray-600 hover:text-gray-900"
-          >
-            {t('scrumBack')}
-          </button>
+    <Card
+      className="anim-fade-up group transition-[border-color,box-shadow] duration-200 hover:border-hover-border hover:shadow-[0_8px_22px_rgba(16,42,77,.06)]"
+      style={{ padding: '18px 20px', animationDuration: '.5s', animationDelay: `${index * 0.07}s` }}
+    >
+      <div className="flex flex-col" style={{ gap: 12 }}>
+        <div className="flex items-center" style={{ gap: 10 }}>
+          <Pill color={tab.color}>{tab.label}</Pill>
+          <span style={{ fontSize: 12, color: '#828B95' }}>{formatDateRuFull(note.date)}</span>
+          {!editing && (
+            <button
+              onClick={() => { setEditing(true); setContent(note.content) }}
+              className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+              style={{ fontSize: 12, fontWeight: 500, color: '#0154C8' }}
+            >
+              Изменить
+            </button>
+          )}
         </div>
-      </header>
-
-      <main className="max-w-4xl mx-auto px-4 py-6">
-        {!showForm && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="mb-6 bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700"
-          >
-            {t('scrumNew')}
-          </button>
-        )}
-
-        {showForm && (
-          <form onSubmit={handleCreate} className="bg-white shadow rounded-lg p-4 mb-6 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('scrumDate')}</label>
-              <input
-                type="date"
-                value={newDate}
-                onChange={(e) => setNewDate(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+        {editing ? (
+          <div className="flex flex-col" style={{ gap: 10 }}>
+            <textarea
+              value={content}
+              onChange={e => setContent(e.target.value)}
+              rows={4}
+              className="input-spec"
+              style={{ height: 'auto', padding: 13, borderRadius: 12, fontSize: 14, lineHeight: 1.6, resize: 'vertical' }}
+              autoFocus
+            />
+            <div className="flex justify-end" style={{ gap: 8 }}>
+              <Button variant="secondary" onClick={() => setEditing(false)}>Отмена</Button>
+              <Button onClick={save} disabled={saving || !content.trim()}>Сохранить</Button>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('scrumContent')}</label>
-              <textarea
-                value={newContent}
-                onChange={(e) => setNewContent(e.target.value)}
-                rows={8}
-                placeholder={t('scrumContentPlaceholder')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-                autoFocus
-              />
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                disabled={saving || !newContent.trim()}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
-              >
-                {saving ? t('saving') : t('scrumSave')}
-              </button>
-              <button
-                type="button"
-                onClick={() => { setShowForm(false); setNewContent(''); setNewDate(new Date().toISOString().split('T')[0]) }}
-                className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm hover:bg-gray-300"
-              >
-                {t('cancel')}
-              </button>
-            </div>
-          </form>
-        )}
-
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
-        ) : notes.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg shadow">
-            <p className="text-gray-500">{t('scrumNoEntries')}</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {notes.map((note) => (
-              <div key={note.id} className="bg-white shadow rounded-lg p-4">
-                {editingId === note.id ? (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('scrumDate')}</label>
-                      <input
-                        type="date"
-                        value={editDate}
-                        onChange={(e) => setEditDate(e.target.value)}
-                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <textarea
-                      value={editContent}
-                      onChange={(e) => setEditContent(e.target.value)}
-                      rows={8}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-                      autoFocus
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleSaveEdit}
-                        disabled={saving || !editContent.trim()}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
-                      >
-                        {saving ? t('saving') : t('scrumSave')}
-                      </button>
-                      <button
-                        onClick={() => { setEditingId(null); setEditContent(''); setEditDate('') }}
-                        className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm hover:bg-gray-300"
-                      >
-                        {t('cancel')}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex justify-between items-center mb-2">
-                      <h3 className="font-medium text-gray-900">{formatDate(note.date)}</h3>
-                      <button
-                        onClick={() => handleStartEdit(note)}
-                        className="text-sm text-blue-600 hover:text-blue-800"
-                      >
-                        {t('scrumEdit')}
-                      </button>
-                    </div>
-                    <p className="text-gray-700 whitespace-pre-wrap">{note.content}</p>
-                  </>
-                )}
-              </div>
-            ))}
+          <div style={{ fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap', textWrap: 'pretty' }}>
+            {note.content}
           </div>
         )}
-      </main>
+      </div>
+    </Card>
+  )
+}
+
+export default function ScrumPage() {
+  const { scrumNotes, reload } = useShell()
+  const [tab, setTab] = useState<ScrumTab>('sos')
+  const [draft, setDraft] = useState('')
+  const [saving, setSaving] = useState(false)
+  const toast = useToast()
+
+  const byTab = useMemo(() => {
+    const map: Record<ScrumTab, ScrumNote[]> = { sos: [], topics: [], decisions: [] }
+    for (const n of scrumNotes) {
+      ;(map[n.tab] ?? map.sos).push(n)
+    }
+    return map
+  }, [scrumNotes])
+
+  const active = TABS.find(t => t.key === tab)!
+  const notes = byTab[tab]
+
+  const submit = async () => {
+    if (!draft.trim()) return
+    setSaving(true)
+    try {
+      await scrumApi.create({ content: draft.trim(), tab, date: new Date().toISOString().split('T')[0] })
+      setDraft('')
+      toast('Записано')
+      await reload()
+    } catch (e) {
+      console.error('Failed to create note', e)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') submit()
+  }
+
+  return (
+    <div className="flex flex-col" style={{ gap: 20, maxWidth: 900 }}>
+      <div className="flex flex-col anim-fade-up" style={{ gap: 6 }}>
+        <div className="eyebrow">Уровень команды</div>
+        <div style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-.8px' }}>Командные заметки</div>
+      </div>
+
+      <div className="flex flex-col" style={{ gap: 8 }}>
+        <div className="flex" style={{ padding: 4, background: '#EEF3F7', borderRadius: 12, gap: 4, width: 'fit-content' }}>
+          {TABS.map(t => {
+            const isActive = t.key === tab
+            return (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className="flex items-center transition-all"
+                style={{
+                  gap: 7,
+                  height: 34,
+                  padding: '0 14px',
+                  borderRadius: 9,
+                  fontSize: 14,
+                  background: isActive ? '#fff' : 'transparent',
+                  color: isActive ? '#333' : '#828B95',
+                  fontWeight: isActive ? 500 : 400,
+                  boxShadow: isActive ? '0 1px 3px rgba(16,42,77,.06)' : 'none',
+                  transitionDuration: '.2s',
+                }}
+              >
+                {t.label}
+                <span
+                  className="rounded-pill"
+                  style={{
+                    fontSize: 11,
+                    padding: '2px 7px',
+                    background: isActive ? '#DCEBFF' : '#F4F7FA',
+                    color: isActive ? '#0154C8' : '#A5AEB8',
+                  }}
+                >
+                  {byTab[t.key].length}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+        <div style={{ fontSize: 13, color: '#828B95' }}>{active.hint}</div>
+      </div>
+
+      <Card style={{ padding: 18 }}>
+        <div className="flex flex-col" style={{ gap: 12 }}>
+          <textarea
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onKeyDown={onKeyDown}
+            placeholder="Что вынести на уровень команды?"
+            className="input-spec"
+            style={{ minHeight: 74, height: 'auto', padding: 13, borderRadius: 12, fontSize: 14, lineHeight: 1.6, resize: 'vertical' }}
+          />
+          <div className="flex items-center" style={{ gap: 12 }}>
+            <Button onClick={submit} disabled={saving || !draft.trim()} style={{ height: 38 }}>
+              {saving ? 'Записываем…' : 'Записать'}
+            </Button>
+            <span style={{ fontSize: 12, color: '#A5AEB8' }}>Заметка видна только вам · ⌘+Enter</span>
+          </div>
+        </div>
+      </Card>
+
+      {notes.length === 0 ? (
+        <Card style={{ padding: 40, textAlign: 'center' }}>
+          <div style={{ fontSize: 14, color: '#828B95' }}>В этом разделе пока пусто</div>
+        </Card>
+      ) : (
+        <div className="flex flex-col" style={{ gap: 12 }}>
+          {notes.map((n, i) => (
+            <NoteCard key={n.id} note={n} index={i} onSaved={reload} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

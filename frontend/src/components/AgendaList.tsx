@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { agendaApi, AgendaItem, AgendaCategory } from '../api/client'
-import { useI18n } from '../i18n'
+import { Button, SpecCheckbox } from '../ui'
 
 interface Props {
   employeeId: number
@@ -8,18 +8,33 @@ interface Props {
   onUpdate: () => void
 }
 
-const categoryColors: Record<AgendaCategory, string> = {
-  note: 'bg-gray-50 border-l-4 border-gray-300',
-  positive: 'bg-green-50 border-l-4 border-green-500',
-  warning: 'bg-yellow-50 border-l-4 border-yellow-500',
-  problem: 'bg-red-50 border-l-4 border-red-500',
+export const CATEGORY_META: Record<AgendaCategory, { label: string; color: string }> = {
+  note: { label: 'Заметка', color: '#828B95' },
+  positive: { label: 'Позитив', color: '#1BCE7B' },
+  warning: { label: 'Замечание', color: '#FAA72C' },
+  problem: { label: 'Проблема', color: '#FF5752' },
 }
 
-const categoryLabels: Record<AgendaCategory, string> = {
-  note: 'categoryNote',
-  positive: 'categoryPositive',
-  warning: 'categoryWarning',
-  problem: 'categoryProblem',
+const CATEGORIES: AgendaCategory[] = ['note', 'positive', 'warning', 'problem']
+
+function Star({ active, onClick }: { active: boolean; onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="flex-none transition-opacity hover:opacity-70" title="Важное">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill={active ? '#FAA72C' : 'none'} stroke={active ? '#FAA72C' : '#C9D3DC'} strokeWidth="2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+      </svg>
+    </button>
+  )
+}
+
+function DragHandle() {
+  return (
+    <span className="flex flex-col flex-none" style={{ gap: 3, cursor: 'grab' }}>
+      {[0, 1, 2].map(i => (
+        <span key={i} style={{ width: 12, height: 2, borderRadius: 1, background: '#C9D3DC' }} />
+      ))}
+    </span>
+  )
 }
 
 export default function AgendaList({ employeeId, items, onUpdate }: Props) {
@@ -27,12 +42,11 @@ export default function AgendaList({ employeeId, items, onUpdate }: Props) {
   const [newCategory, setNewCategory] = useState<AgendaCategory>('note')
   const [adding, setAdding] = useState(false)
   const [draggedId, setDraggedId] = useState<number | null>(null)
-  const { t, language } = useI18n()
+  const [overId, setOverId] = useState<number | null>(null)
 
-  const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleAdd = async (e?: React.FormEvent) => {
+    e?.preventDefault()
     if (!newContent.trim()) return
-
     setAdding(true)
     try {
       await agendaApi.create(employeeId, newContent.trim(), newCategory)
@@ -46,77 +60,36 @@ export default function AgendaList({ employeeId, items, onUpdate }: Props) {
     }
   }
 
-  const handleToggle = async (item: AgendaItem) => {
-    try {
-      await agendaApi.update(item.id, { isDiscussed: !item.isDiscussed })
-      onUpdate()
-    } catch (error) {
-      console.error('Failed to toggle agenda item', error)
-    }
-  }
+  const toggle = (item: AgendaItem) =>
+    agendaApi.update(item.id, { isDiscussed: !item.isDiscussed }).then(onUpdate).catch(console.error)
 
-  const handleToggleImportant = async (item: AgendaItem) => {
-    try {
-      await agendaApi.update(item.id, { isImportant: !item.isImportant })
-      onUpdate()
-    } catch (error) {
-      console.error('Failed to toggle important', error)
-    }
-  }
+  const toggleImportant = (item: AgendaItem) =>
+    agendaApi.update(item.id, { isImportant: !item.isImportant }).then(onUpdate).catch(console.error)
 
-  const handleCategoryChange = async (item: AgendaItem, category: AgendaCategory) => {
-    try {
-      await agendaApi.update(item.id, { category })
-      onUpdate()
-    } catch (error) {
-      console.error('Failed to update category', error)
-    }
-  }
+  const changeCategory = (item: AgendaItem, category: AgendaCategory) =>
+    agendaApi.update(item.id, { category }).then(onUpdate).catch(console.error)
 
-  const handleDelete = async (id: number) => {
-    try {
-      await agendaApi.delete(id)
-      onUpdate()
-    } catch (error) {
-      console.error('Failed to delete agenda item', error)
-    }
-  }
-
-  const handleDragStart = (e: React.DragEvent, id: number) => {
-    setDraggedId(id)
-    e.dataTransfer.effectAllowed = 'move'
-  }
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-  }
+  const remove = (id: number) => agendaApi.delete(id).then(onUpdate).catch(console.error)
 
   const handleDrop = async (e: React.DragEvent, targetId: number) => {
     e.preventDefault()
+    setOverId(null)
     if (draggedId === null || draggedId === targetId) {
       setDraggedId(null)
       return
     }
-
-    const activeItems = items.filter((item) => !item.isDiscussed)
-    const draggedIndex = activeItems.findIndex((item) => item.id === draggedId)
-    const targetIndex = activeItems.findIndex((item) => item.id === targetId)
-
-    if (draggedIndex === -1 || targetIndex === -1) {
+    const active = items.filter(i => !i.isDiscussed)
+    const from = active.findIndex(i => i.id === draggedId)
+    const to = active.findIndex(i => i.id === targetId)
+    if (from === -1 || to === -1) {
       setDraggedId(null)
       return
     }
-
-    // Reorder items
-    const reordered = [...activeItems]
-    const [removed] = reordered.splice(draggedIndex, 1)
-    reordered.splice(targetIndex, 0, removed)
-
-    const newOrder = reordered.map((item) => item.id)
-
+    const reordered = [...active]
+    const [moved] = reordered.splice(from, 1)
+    reordered.splice(to, 0, moved)
     try {
-      await agendaApi.reorder(employeeId, newOrder)
+      await agendaApi.reorder(employeeId, reordered.map(i => i.id))
       onUpdate()
     } catch (error) {
       console.error('Failed to reorder items', error)
@@ -125,204 +98,157 @@ export default function AgendaList({ employeeId, items, onUpdate }: Props) {
     }
   }
 
-  const handleDragEnd = () => {
-    setDraggedId(null)
-  }
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString(language === 'ru' ? 'ru-RU' : 'en-US', {
-      day: 'numeric',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  }
-
-  const activeItems = items.filter((item) => !item.isDiscussed)
-  const discussedItems = items.filter((item) => item.isDiscussed)
-
-  const categories: AgendaCategory[] = ['note', 'positive', 'warning', 'problem']
+  const activeItems = items.filter(i => !i.isDiscussed)
+  const discussedItems = items.filter(i => i.isDiscussed)
 
   return (
-    <div className="space-y-4">
-      <form onSubmit={handleAdd} className="space-y-2">
-        <div className="flex gap-2">
+    <div className="flex flex-col" style={{ gap: 12 }}>
+      <form onSubmit={handleAdd} className="flex flex-col" style={{ gap: 8 }}>
+        <div className="flex" style={{ gap: 8 }}>
           <input
-            type="text"
             value={newContent}
-            onChange={(e) => setNewContent(e.target.value)}
-            placeholder={t('addTopicPlaceholder')}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onChange={e => setNewContent(e.target.value)}
+            placeholder="Записать пункт, не дожидаясь встречи"
+            className="input-spec"
+            style={{ height: 40, borderRadius: 10, fontSize: 14 }}
           />
-          <button
-            type="submit"
-            disabled={adding || !newContent.trim()}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
-          >
-            {t('add')}
-          </button>
+          <Button type="submit" disabled={adding || !newContent.trim()}>Добавить</Button>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              type="button"
-              onClick={() => setNewCategory(cat)}
-              className={`px-3 py-1 text-xs rounded-full border transition-colors ${
-                newCategory === cat
-                  ? cat === 'note'
-                    ? 'bg-gray-200 border-gray-400'
-                    : cat === 'positive'
-                    ? 'bg-green-200 border-green-500'
-                    : cat === 'warning'
-                    ? 'bg-yellow-200 border-yellow-500'
-                    : 'bg-red-200 border-red-500'
-                  : 'bg-white border-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              {t(categoryLabels[cat] as any)}
-            </button>
-          ))}
+        <div className="flex flex-wrap" style={{ gap: 6 }}>
+          {CATEGORIES.map(cat => {
+            const meta = CATEGORY_META[cat]
+            const active = newCategory === cat
+            return (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setNewCategory(cat)}
+                className="rounded-pill flex items-center transition-colors"
+                style={{
+                  gap: 6,
+                  height: 26,
+                  padding: '0 11px',
+                  fontSize: 12,
+                  border: active ? `1px solid ${meta.color}` : '1px solid #E2E2E2',
+                  background: active ? meta.color + '18' : '#fff',
+                  color: active ? meta.color : '#525C69',
+                  transitionDuration: '.2s',
+                }}
+              >
+                <span className="rounded-full" style={{ width: 6, height: 6, background: meta.color }} />
+                {meta.label}
+              </button>
+            )
+          })}
         </div>
       </form>
 
-      {activeItems.length === 0 && discussedItems.length === 0 ? (
-        <p className="text-gray-500 text-sm py-2">{t('noTopics')}</p>
-      ) : (
-        <>
-          {activeItems.length > 0 && (
-            <ul className="space-y-2">
-              {activeItems.map((item) => (
-                <li
-                  key={item.id}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, item.id)}
-                  onDragOver={handleDragOver}
-                  onDrop={(e) => handleDrop(e, item.id)}
-                  onDragEnd={handleDragEnd}
-                  className={`flex items-start gap-3 p-3 rounded-md cursor-move transition-opacity ${
-                    categoryColors[item.category]
-                  } ${draggedId === item.id ? 'opacity-50' : ''}`}
-                >
-                  <div className="flex items-center gap-2 pt-0.5">
-                    <svg
-                      className="w-4 h-4 text-gray-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 8h16M4 16h16"
-                      />
-                    </svg>
-                    <input
-                      type="checkbox"
-                      checked={false}
-                      onChange={() => handleToggle(item)}
-                      className="w-4 h-4 text-blue-600"
-                    />
-                  </div>
-                  <button
-                    onClick={() => handleToggleImportant(item)}
-                    className="flex-shrink-0 pt-0.5"
-                    title={t('important')}
-                  >
-                    {item.isImportant ? (
-                      <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                      </svg>
-                    ) : (
-                      <svg className="w-4 h-4 text-gray-300 hover:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                      </svg>
-                    )}
-                  </button>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="break-words">{item.content}</span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
-                      <span>{t('createdAt')}: {formatDate(item.createdAt)}</span>
-                      <select
-                        value={item.category}
-                        onChange={(e) => handleCategoryChange(item, e.target.value as AgendaCategory)}
-                        className="text-xs bg-transparent border-none p-0 focus:ring-0 cursor-pointer"
-                      >
-                        {categories.map((cat) => (
-                          <option key={cat} value={cat}>
-                            {t(categoryLabels[cat] as any)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    className="text-gray-400 hover:text-red-600 flex-shrink-0"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+      {activeItems.length === 0 && discussedItems.length === 0 && (
+        <div style={{ fontSize: 13, color: '#A5AEB8', padding: '4px 0' }}>Пока пусто — добавьте первую тему</div>
+      )}
 
-          {discussedItems.length > 0 && (
-            <div className="pt-2 border-t">
-              <h4 className="text-sm font-medium text-gray-500 mb-2">{t('discussed')}</h4>
-              <ul className="space-y-2">
-                {discussedItems.map((item) => (
-                  <li
-                    key={item.id}
-                    className={`flex items-start gap-3 p-3 rounded-md opacity-60 ${categoryColors[item.category]}`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={true}
-                      onChange={() => handleToggle(item)}
-                      className="w-4 h-4 text-blue-600 mt-0.5"
-                    />
-                    <button
-                      onClick={() => handleToggleImportant(item)}
-                      className="flex-shrink-0 mt-0.5"
-                      title={t('important')}
-                    >
-                      {item.isImportant ? (
-                        <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                        </svg>
-                      ) : (
-                        <svg className="w-4 h-4 text-gray-300 hover:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                        </svg>
-                      )}
-                    </button>
-                    <div className="flex-1 min-w-0">
-                      <span className="line-through break-words">{item.content}</span>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {t('createdAt')}: {formatDate(item.createdAt)}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => handleDelete(item.id)}
-                      className="text-gray-400 hover:text-red-600 flex-shrink-0"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+      {activeItems.map(item => {
+        const meta = CATEGORY_META[item.category]
+        return (
+          <div
+            key={item.id}
+            draggable
+            onDragStart={() => setDraggedId(item.id)}
+            onDragOver={e => { e.preventDefault(); setOverId(item.id) }}
+            onDragLeave={() => setOverId(cur => (cur === item.id ? null : cur))}
+            onDrop={e => handleDrop(e, item.id)}
+            onDragEnd={() => { setDraggedId(null); setOverId(null) }}
+            className="flex items-start transition-[border-color,opacity]"
+            style={{
+              gap: 10,
+              padding: '11px 14px',
+              borderRadius: 12,
+              background: '#F8FBFF',
+              border: overId === item.id && draggedId !== item.id ? '1px solid #0075FF' : '1px solid #F0F0F0',
+              opacity: draggedId === item.id ? .45 : 1,
+              cursor: 'grab',
+              transitionDuration: '.2s',
+            }}
+          >
+            <div className="flex items-center flex-none" style={{ gap: 10, paddingTop: 2 }}>
+              <DragHandle />
+              <SpecCheckbox checked={false} onChange={() => toggle(item)} />
             </div>
-          )}
-        </>
+            <div className="flex-1 min-w-0">
+              <div style={{ fontSize: 14, overflowWrap: 'break-word' }}>{item.content}</div>
+              <div className="flex items-center" style={{ gap: 8, marginTop: 3 }}>
+                <select
+                  value={item.category}
+                  onChange={e => changeCategory(item, e.target.value as AgendaCategory)}
+                  className="cursor-pointer"
+                  style={{
+                    fontSize: 12,
+                    color: meta.color,
+                    background: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    padding: 0,
+                    appearance: 'none',
+                  }}
+                >
+                  {CATEGORIES.map(c => (
+                    <option key={c} value={c}>{CATEGORY_META[c].label}</option>
+                  ))}
+                </select>
+                <span style={{ fontSize: 12, color: '#A5AEB8' }}>В повестку следующей встречи</span>
+              </div>
+            </div>
+            <div className="flex items-center flex-none" style={{ gap: 8, paddingTop: 2 }}>
+              <Star active={item.isImportant} onClick={() => toggleImportant(item)} />
+              <button
+                onClick={() => remove(item.id)}
+                className="transition-colors"
+                style={{ fontSize: 13, color: '#A5AEB8', transitionDuration: '.15s' }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#FF5752' }}
+                onMouseLeave={e => { e.currentTarget.style.color = '#A5AEB8' }}
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )
+      })}
+
+      {discussedItems.length > 0 && (
+        <div className="flex flex-col" style={{ gap: 8, marginTop: 4 }}>
+          <div style={{ fontSize: 12, fontWeight: 500, color: '#828B95' }}>Обсуждено</div>
+          {discussedItems.map(item => (
+            <div
+              key={item.id}
+              className="flex items-start"
+              style={{
+                gap: 10,
+                padding: '11px 14px',
+                borderRadius: 12,
+                background: '#F8FBFF',
+                border: '1px solid #EAF3FF',
+              }}
+            >
+              <div style={{ paddingTop: 2 }}>
+                <SpecCheckbox checked onChange={() => toggle(item)} color="#1BCE7B" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span style={{ fontSize: 14, color: '#A5AEB8', textDecoration: 'line-through', overflowWrap: 'break-word' }}>
+                  {item.content}
+                </span>
+              </div>
+              <div className="flex items-center flex-none" style={{ gap: 8, paddingTop: 2 }}>
+                <Star active={item.isImportant} onClick={() => toggleImportant(item)} />
+                <button
+                  onClick={() => remove(item.id)}
+                  style={{ fontSize: 13, color: '#A5AEB8' }}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   )

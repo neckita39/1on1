@@ -50,7 +50,15 @@ export interface Meeting {
   date: string
   notes: string
   discussedTopics: string[]
+  mood: number | null
+  duration: number | null
   createdAt: string
+}
+
+export interface GlobalMeeting extends Meeting {
+  employeeId: number
+  employeeName: string
+  employeeAvatarUrl: string | null
 }
 
 export const authApi = {
@@ -84,24 +92,28 @@ export const agendaApi = {
 
 export const meetingsApi = {
   list: (employeeId: number) => api.get<Meeting[]>(`/employees/${employeeId}/meetings`),
-  create: (employeeId: number, data: { notes: string; date?: string; discussedTopics?: string[] }) =>
+  listAll: () => api.get<GlobalMeeting[]>('/meetings'),
+  create: (employeeId: number, data: { notes: string; date?: string; discussedTopics?: string[]; mood?: number; duration?: number }) =>
     api.post<Meeting>(`/employees/${employeeId}/meetings`, data),
   get: (id: number) => api.get<Meeting>(`/meetings/${id}`),
 }
+
+export type ScrumTab = 'sos' | 'topics' | 'decisions'
 
 export interface ScrumNote {
   id: number
   content: string
   date: string
+  tab: ScrumTab
   createdAt: string
   updatedAt: string
 }
 
 export const scrumApi = {
   list: () => api.get<ScrumNote[]>('/scrum-notes'),
-  create: (data: { content: string; date?: string }) =>
+  create: (data: { content: string; date?: string; tab?: ScrumTab }) =>
     api.post<ScrumNote>('/scrum-notes', data),
-  update: (id: number, data: { content?: string; date?: string }) =>
+  update: (id: number, data: { content?: string; date?: string; tab?: ScrumTab }) =>
     api.put<ScrumNote>(`/scrum-notes/${id}`, data),
 }
 

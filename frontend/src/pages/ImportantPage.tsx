@@ -1,37 +1,29 @@
-import { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { agendaApi, ImportantItem, AgendaCategory } from '../api/client'
-import { useI18n } from '../i18n'
-
-const categoryColors: Record<AgendaCategory, string> = {
-  note: 'bg-gray-50 border-l-4 border-gray-300',
-  positive: 'bg-green-50 border-l-4 border-green-500',
-  warning: 'bg-yellow-50 border-l-4 border-yellow-500',
-  problem: 'bg-red-50 border-l-4 border-red-500',
-}
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { agendaApi, ImportantItem } from '../api/client'
+import { Card, formatDateRuFull } from '../ui'
+import { CATEGORY_META } from '../components/AgendaList'
 
 export default function ImportantPage() {
   const [items, setItems] = useState<ImportantItem[]>([])
-  const [loading, setLoading] = useState(true)
-  const navigate = useNavigate()
-  const { t, language } = useI18n()
+  const [loaded, setLoaded] = useState(false)
 
-  const loadItems = async () => {
+  const load = async () => {
     try {
       const res = await agendaApi.important()
       setItems(res.data)
     } catch (error) {
       console.error('Failed to load important items', error)
     } finally {
-      setLoading(false)
+      setLoaded(true)
     }
   }
 
   useEffect(() => {
-    loadItems()
+    load()
   }, [])
 
-  const handleUnmark = async (id: number) => {
+  const unmark = async (id: number) => {
     try {
       await agendaApi.update(id, { isImportant: false })
       setItems(prev => prev.filter(item => item.id !== id))
@@ -40,74 +32,69 @@ export default function ImportantPage() {
     }
   }
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString(language === 'ru' ? 'ru-RU' : 'en-US', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    })
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold text-gray-900">{t('importantTitle')}</h1>
-          <button
-            onClick={() => navigate('/')}
-            className="text-sm text-gray-600 hover:text-gray-900"
-          >
-            {t('importantBack')}
-          </button>
-        </div>
-      </header>
+    <div className="flex flex-col" style={{ gap: 20, maxWidth: 720 }}>
+      <div className="flex flex-col anim-fade-up" style={{ gap: 6 }}>
+        <div className="eyebrow">На контроле</div>
+        <div style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-.8px' }}>Важное</div>
+      </div>
 
-      <main className="max-w-4xl mx-auto px-4 py-6">
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      {loaded && items.length === 0 ? (
+        <Card style={{ padding: 48, textAlign: 'center' }}>
+          <div style={{ fontSize: 14, color: '#828B95' }}>
+            Отметьте пункт повестки звёздочкой — он появится здесь
           </div>
-        ) : items.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg shadow">
-            <p className="text-gray-500">{t('noImportantItems')}</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {items.map((item) => (
-              <div
+        </Card>
+      ) : (
+        <div className="flex flex-col" style={{ gap: 10 }}>
+          {items.map((item, i) => {
+            const meta = CATEGORY_META[item.category]
+            return (
+              <Card
                 key={item.id}
-                className={`flex items-start gap-3 p-3 rounded-md ${categoryColors[item.category]}`}
+                className="flex items-start anim-fade-up"
+                style={{ padding: '14px 16px', gap: 12, animationDuration: '.45s', animationDelay: `${i * 0.05}s` }}
               >
                 <button
-                  onClick={() => handleUnmark(item.id)}
-                  className="flex-shrink-0 pt-0.5"
-                  title={t('important')}
+                  onClick={() => unmark(item.id)}
+                  className="flex-none transition-opacity hover:opacity-60"
+                  style={{ paddingTop: 2 }}
+                  title="Снять отметку"
                 >
-                  <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="#FAA72C">
                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                   </svg>
                 </button>
                 <div className="flex-1 min-w-0">
-                  <span className={`break-words ${item.isDiscussed ? 'line-through opacity-60' : ''}`}>
+                  <div
+                    style={{
+                      fontSize: 14,
+                      lineHeight: 1.55,
+                      overflowWrap: 'break-word',
+                      color: item.isDiscussed ? '#A5AEB8' : '#333',
+                      textDecoration: item.isDiscussed ? 'line-through' : 'none',
+                    }}
+                  >
                     {item.content}
-                  </span>
-                  <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                  </div>
+                  <div className="flex items-center flex-wrap" style={{ gap: 8, marginTop: 6 }}>
+                    <span className="rounded-full inline-block" style={{ width: 6, height: 6, background: meta.color }} />
+                    <span style={{ fontSize: 12, color: meta.color }}>{meta.label}</span>
                     <Link
                       to={`/employees/${item.employeeId}`}
-                      className="text-blue-600 hover:text-blue-800"
+                      className="transition-opacity hover:opacity-65"
+                      style={{ fontSize: 12, fontWeight: 500, color: '#0154C8' }}
                     >
                       {item.employeeName}
                     </Link>
-                    <span>&middot;</span>
-                    <span>{formatDate(item.createdAt)}</span>
+                    <span style={{ fontSize: 12, color: '#A5AEB8' }}>· {formatDateRuFull(item.createdAt)}</span>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </main>
+              </Card>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

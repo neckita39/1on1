@@ -1,11 +1,16 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { useState, useEffect, createContext, useContext } from 'react'
 import { authApi, AuthStatus } from './api/client'
 import { I18nProvider } from './i18n'
+import { ToastProvider } from './ui/toast'
+import AppShell from './layout/AppShell'
+import Splash from './components/Splash'
 import LoginPage from './pages/LoginPage'
 import SetupPage from './pages/SetupPage'
 import HomePage from './pages/HomePage'
 import EmployeePage from './pages/EmployeePage'
+import MeetingPage from './pages/MeetingPage'
+import HistoryPage from './pages/HistoryPage'
 import DailyPage from './pages/DailyPage'
 import ImportantPage from './pages/ImportantPage'
 import ScrumPage from './pages/ScrumPage'
@@ -50,15 +55,11 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
   )
 }
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedLayout() {
   const { status, loading } = useAuth()
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    )
+    return <div className="min-h-screen bg-page" />
   }
 
   if (status?.needsSetup) {
@@ -69,7 +70,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />
   }
 
-  return <>{children}</>
+  return (
+    <AppShell>
+      <Outlet />
+    </AppShell>
+  )
 }
 
 function App() {
@@ -77,50 +82,22 @@ function App() {
     <BrowserRouter>
       <I18nProvider>
         <AuthProvider>
-          <Routes>
-            <Route path="/setup" element={<SetupPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <HomePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/daily"
-              element={
-                <ProtectedRoute>
-                  <DailyPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/important"
-              element={
-                <ProtectedRoute>
-                  <ImportantPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/scrum"
-              element={
-                <ProtectedRoute>
-                  <ScrumPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/employees/:id"
-              element={
-                <ProtectedRoute>
-                  <EmployeePage />
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
+          <ToastProvider>
+            <Splash />
+            <Routes>
+              <Route path="/setup" element={<SetupPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route element={<ProtectedLayout />}>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/employees/:id" element={<EmployeePage />} />
+                <Route path="/meeting/:id" element={<MeetingPage />} />
+                <Route path="/history" element={<HistoryPage />} />
+                <Route path="/daily" element={<DailyPage />} />
+                <Route path="/important" element={<ImportantPage />} />
+                <Route path="/scrum" element={<ScrumPage />} />
+              </Route>
+            </Routes>
+          </ToastProvider>
         </AuthProvider>
       </I18nProvider>
     </BrowserRouter>
