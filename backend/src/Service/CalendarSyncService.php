@@ -67,33 +67,43 @@ class CalendarSyncService
         }
 
         $employees = $this->employeeRepository->findAll();
+        $ownerFirstName = $this->ownerFirstName();
         $matched = [];
         $unmatchedEvents = [];
         $matchedIds = [];
 
-        foreach ($series as $name => $instances) {
-            $employee = $this->matchEmployee($name, $employees);
-            if ($employee === null || isset($matchedIds[$employee->getId()])) {
-                $unmatchedEvents[] = $name;
-                continue;
+        // два прохода: сначала однозначные матчи («Сергей Ш» → Ширяев),
+        // затем оставшиеся события без уже занятых кандидатов («Сергей» → Горшков)
+        $pending = array_keys($series);
+        for ($round = 0; $round < 2; $round++) {
+            $stillPending = [];
+            foreach ($pending as $name) {
+                $employee = $this->matchEmployee($name, $employees, $matchedIds, $ownerFirstName);
+                if ($employee === null) {
+                    $stillPending[] = $name;
+                    continue;
+                }
+
+                $instances = $series[$name];
+                $next = $this->nearestInstance($instances, $now);
+                $rule = $this->humanRule($instances);
+
+                $employee->setCalendarEventId($next !== null ? (int)($next['PARENT_ID'] ?? $next['ID'] ?? 0) : null);
+                $employee->setMeetingRule($rule);
+                $employee->setNextMeetingAt($next !== null ? $this->parseDate($next['DATE_FROM']) : null);
+
+                $matchedIds[$employee->getId()] = true;
+                $matched[] = [
+                    'employeeId' => $employee->getId(),
+                    'employeeName' => $employee->getName(),
+                    'eventName' => $name,
+                    'rule' => $rule,
+                    'next' => $employee->getNextMeetingAt()?->format('Y-m-d H:i'),
+                ];
             }
-
-            $next = $this->nearestInstance($instances, $now);
-            $rule = $this->humanRule($instances);
-
-            $employee->setCalendarEventId($next !== null ? (int)($next['PARENT_ID'] ?? $next['ID'] ?? 0) : null);
-            $employee->setMeetingRule($rule);
-            $employee->setNextMeetingAt($next !== null ? $this->parseDate($next['DATE_FROM']) : null);
-
-            $matchedIds[$employee->getId()] = true;
-            $matched[] = [
-                'employeeId' => $employee->getId(),
-                'employeeName' => $employee->getName(),
-                'eventName' => $name,
-                'rule' => $rule,
-                'next' => $employee->getNextMeetingAt()?->format('Y-m-d H:i'),
-            ];
+            $pending = $stillPending;
         }
+        $unmatchedEvents = $pending;
 
         // у кого серия из календаря пропала — очищаем, чтобы не показывать устаревшие даты
         $unmatchedEmployees = [];
@@ -116,8 +126,21 @@ class CalendarSyncService
         ];
     }
 
-    /** @param Employee[] $employees */
-    private function matchEmployee(string $eventName, array $employees): ?Employee
+    private function ownerFirstName(): ?string
+    {
+        $owner = $this->bitrixService->getOwner();
+        if ($owner === null || trim($owner['name']) === '') {
+            return null;
+        }
+        $words = preg_split('~\s+~u', trim($owner['name']));
+        return $this->canonName($words[0]);
+    }
+
+    /**
+     * @param Employee[] $employees
+     * @param array<int,bool> $excludeIds уже сматченные в этом синке
+     */
+    private function matchEmployee(string $eventName, array $employees, array $excludeIds, ?string $ownerFirstName): ?Employee
     {
         preg_match_all('~\(([^)]+)\)~u', $eventName, $m);
         $tokens = [];
@@ -137,6 +160,18 @@ class CalendarSyncService
 
             $candidates = [];
             foreach ($employees as $employee) {
+                if (isset($excludeIds[$employee->getId()])) {
+                    continue;
+                }
+
+                // «1-1 (Никита)» с именем владельца календаря — встреча с МОИМ тимлидом
+                if ($surnamePrefix === null && $first === $ownerFirstName) {
+                    if ($employee->isManager()) {
+                        $candidates[] = $employee;
+                    }
+                    continue;
+                }
+
                 $empWords = preg_split('~\s+~u', trim($employee->getName()));
                 if ($this->canonName($empWords[0]) !== $first) {
                     continue;

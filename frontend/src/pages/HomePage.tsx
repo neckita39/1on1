@@ -94,7 +94,9 @@ function EmployeeCardNew({ employee, meetings, index }: {
         </div>
         <div className="min-w-0 flex-1">
           <div className="truncate" style={{ fontSize: 15, fontWeight: 500 }}>{employee.name}</div>
-          <div className="truncate" style={{ fontSize: 13, color: '#828B95' }}>{employee.position || '—'}</div>
+          <div className="truncate" style={{ fontSize: 13, color: employee.isManager ? '#5B22B0' : '#828B95' }}>
+            {employee.isManager ? 'Мой тимлид' : employee.position || '—'}
+          </div>
         </div>
         <span
           className="rounded-pill flex-none"

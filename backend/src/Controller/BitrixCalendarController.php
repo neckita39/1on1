@@ -19,6 +19,21 @@ class BitrixCalendarController extends AbstractController
         private CalendarSyncService $calendarSyncService
     ) {}
 
+    #[Route('/api/bitrix/me', methods: ['GET'])]
+    public function me(Request $request): JsonResponse
+    {
+        if (!$this->authService->isAuthenticated($request)) {
+            return $this->json(['error' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $owner = $this->bitrixService->getOwner();
+        if ($owner === null) {
+            return $this->json(['error' => 'Bitrix24 is not configured'], Response::HTTP_NOT_FOUND);
+        }
+
+        return $this->json($owner);
+    }
+
     #[Route('/api/bitrix/sync-calendar', methods: ['POST'])]
     public function sync(Request $request): JsonResponse
     {

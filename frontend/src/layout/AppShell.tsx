@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { employeesApi, meetingsApi, scrumApi, authApi, Employee, GlobalMeeting, ScrumNote } from '../api/client'
+import { employeesApi, meetingsApi, scrumApi, authApi, BitrixUserPreview, Employee, GlobalMeeting, ScrumNote } from '../api/client'
 import { useAuth } from '../App'
 import { Avatar, SkeletonScreen, urgency, plural } from '../ui'
 import ClockWidget from '../components/ClockWidget'
@@ -91,6 +91,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const [employees, setEmployees] = useState<Employee[]>([])
   const [meetings, setMeetings] = useState<GlobalMeeting[]>([])
   const [scrumNotes, setScrumNotes] = useState<ScrumNote[]>([])
+  const [owner, setOwner] = useState<BitrixUserPreview | null>(null)
   const [loaded, setLoaded] = useState(false)
   const [screenLoading, setScreenLoading] = useState(true)
   const location = useLocation()
@@ -116,6 +117,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     reload()
+    employeesApi.bitrixMe().then(res => setOwner(res.data)).catch(() => {})
   }, [])
 
   // 480 мс скелетон при каждом переходе между экранами
@@ -203,16 +205,23 @@ export default function AppShell({ children }: { children: ReactNode }) {
               onClick={handleLogout}
               title="Выйти"
             >
-              <div
-                className="rounded-full grid place-items-center flex-none text-white"
-                style={{ width: 30, height: 30, background: '#21334C', fontSize: 11, fontWeight: 600 }}
-              >
-                ТЛ
-              </div>
-              <div className="flex flex-col" style={{ gap: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 500 }}>Тимлид</div>
+              {owner ? (
+                <Avatar name={owner.name} id={0} url={owner.avatarUrl} size={30} />
+              ) : (
+                <div
+                  className="rounded-full grid place-items-center flex-none text-white"
+                  style={{ width: 30, height: 30, background: '#21334C', fontSize: 11, fontWeight: 600 }}
+                >
+                  ТЛ
+                </div>
+              )}
+              <div className="flex flex-col min-w-0" style={{ gap: 1 }}>
+                <div className="truncate" style={{ fontSize: 13, fontWeight: 500 }}>{owner?.name ?? 'Тимлид'}</div>
                 <div style={{ fontSize: 12, color: '#828B95' }}>
-                  {employees.length > 0 ? `${employees.length} ${plural(employees.length, 'человек', 'человека', 'человек')}` : 'Выйти'}
+                  {(() => {
+                    const reports = employees.filter(e => !e.isManager).length
+                    return reports > 0 ? `Тимлид · ${reports} ${plural(reports, 'человек', 'человека', 'человек')}` : 'Выйти'
+                  })()}
                 </div>
               </div>
               <svg

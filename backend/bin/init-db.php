@@ -140,4 +140,10 @@ if (!in_array('next_meeting_at', $employeeCols3)) {
     $pdo->exec("ALTER TABLE employees ADD COLUMN next_meeting_at DATETIME");
 }
 
+// Migration: add is_manager flag (мой руководитель, а не подчинённый)
+$employeeCols4 = $pdo->query("PRAGMA table_info(employees)")->fetchAll(PDO::FETCH_COLUMN, 1);
+if (!in_array('is_manager', $employeeCols4)) {
+    $pdo->exec("ALTER TABLE employees ADD COLUMN is_manager INTEGER NOT NULL DEFAULT 0");
+}
+
 echo "Database initialized successfully\n";

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { employeesApi, agendaApi, meetingsApi, Employee, AgendaItem, Meeting, BitrixUserPreview } from '../api/client'
 import { useShell } from '../layout/AppShell'
-import { Avatar, Button, Card, Modal, MoodDot, Spinner, formatDateRu, moodColor, plural } from '../ui'
+import { Avatar, Button, Card, Modal, MoodDot, Pill, SpecCheckbox, Spinner, formatDateRu, moodColor, plural } from '../ui'
 import { useToast } from '../ui/toast'
 import AgendaList from '../components/AgendaList'
 
@@ -406,7 +406,10 @@ export default function EmployeePage() {
           <Avatar name={employee.name} id={employee.id} url={employee.avatarUrl} size={64} />
         </div>
         <div className="flex-1 min-w-0">
-          <div style={{ fontSize: 26, fontWeight: 600, letterSpacing: '-.7px' }}>{employee.name}</div>
+          <div className="flex items-center" style={{ gap: 10 }}>
+            <span style={{ fontSize: 26, fontWeight: 600, letterSpacing: '-.7px' }}>{employee.name}</span>
+            {employee.isManager && <Pill color="#853AF5">мой тимлид</Pill>}
+          </div>
           <div style={{ fontSize: 14, color: '#828B95' }}>
             {[employee.position, tenure(employee.createdAt)].filter(Boolean).join(' · ')}
           </div>
@@ -522,6 +525,7 @@ function EditEmployeeModal({ employee, onClose, onSaved, onDeleted }: {
 }) {
   const [name, setName] = useState(employee.name)
   const [nameInstr, setNameInstr] = useState(employee.nameInstr || '')
+  const [isManager, setIsManager] = useState(employee.isManager)
   const [position, setPosition] = useState(employee.position || '')
   const [bio, setBio] = useState(employee.bio || '')
   const [saving, setSaving] = useState(false)
@@ -535,6 +539,7 @@ function EditEmployeeModal({ employee, onClose, onSaved, onDeleted }: {
       await employeesApi.update(employee.id, {
         name: name.trim(),
         nameInstr: nameInstr.trim() || null,
+        isManager,
         position: position.trim() || undefined,
         bio: bio.trim() || undefined,
       })
@@ -578,6 +583,19 @@ function EditEmployeeModal({ employee, onClose, onSaved, onDeleted }: {
           <span style={{ fontSize: 13, color: '#525C69' }}>Роль</span>
           <input value={position} onChange={e => setPosition(e.target.value)} className="input-spec" style={{ height: 40 }} />
         </label>
+        <div
+          className="flex items-center cursor-pointer"
+          style={{ gap: 10 }}
+          onClick={() => setIsManager(m => !m)}
+        >
+          <SpecCheckbox checked={isManager} onChange={() => setIsManager(m => !m)} />
+          <div className="flex flex-col" style={{ gap: 1 }}>
+            <span style={{ fontSize: 13 }}>Это мой тимлид</span>
+            <span style={{ fontSize: 12, color: '#A5AEB8' }}>
+              Встреча «1-1 (ваше имя)» из календаря привяжется к нему
+            </span>
+          </div>
+        </div>
         <label className="flex flex-col" style={{ gap: 8 }}>
           <span style={{ fontSize: 13, color: '#525C69' }}>Досье</span>
           <textarea

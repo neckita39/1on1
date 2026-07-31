@@ -44,6 +44,9 @@ class Employee
     #[ORM\Column(name: 'next_meeting_at', type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTime $nextMeetingAt = null;
 
+    #[ORM\Column(name: 'is_manager', type: Types::BOOLEAN, options: ['default' => false])]
+    private bool $isManager = false;
+
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private \DateTime $createdAt;
 
@@ -163,6 +166,17 @@ class Employee
     public function setNextMeetingAt(?\DateTime $nextMeetingAt): self
     {
         $this->nextMeetingAt = $nextMeetingAt;
+        return $this;
+    }
+
+    public function isManager(): bool
+    {
+        return $this->isManager;
+    }
+
+    public function setIsManager(bool $isManager): self
+    {
+        $this->isManager = $isManager;
         return $this;
     }
 

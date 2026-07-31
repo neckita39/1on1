@@ -42,6 +42,7 @@ class EmployeeController extends AbstractController
             'id' => $e->getId(),
             'name' => $e->getName(),
             'nameInstr' => $e->getNameInstr(),
+            'isManager' => $e->isManager(),
             'position' => $e->getPosition(),
             'bio' => $e->getBio(),
             'bitrixId' => $e->getBitrixId(),
@@ -77,6 +78,7 @@ class EmployeeController extends AbstractController
         $employee = new Employee();
         $employee->setName($data['name']);
         $employee->setNameInstr($data['nameInstr'] ?? null);
+        $employee->setIsManager((bool)($data['isManager'] ?? false));
         $employee->setPosition($data['position'] ?? null);
         $employee->setBio($data['bio'] ?? null);
         $employee->setBitrixId($bitrixId);
@@ -142,6 +144,7 @@ class EmployeeController extends AbstractController
             'id' => $employee->getId(),
             'name' => $employee->getName(),
             'nameInstr' => $employee->getNameInstr(),
+            'isManager' => $employee->isManager(),
             'position' => $employee->getPosition(),
             'bio' => $employee->getBio(),
             'bitrixId' => $employee->getBitrixId(),
@@ -172,6 +175,9 @@ class EmployeeController extends AbstractController
         }
         if (array_key_exists('nameInstr', $data)) {
             $employee->setNameInstr($data['nameInstr'] ?: null);
+        }
+        if (array_key_exists('isManager', $data)) {
+            $employee->setIsManager((bool)$data['isManager']);
         }
         if (array_key_exists('position', $data)) {
             $employee->setPosition($data['position']);

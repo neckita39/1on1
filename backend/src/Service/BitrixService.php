@@ -56,6 +56,21 @@ class BitrixService
         ];
     }
 
+    public function getOwnerId(): ?int
+    {
+        if (!$this->isConfigured() || !preg_match('~/rest/(\d+)/~', $this->webhookUrl, $m)) {
+            return null;
+        }
+        return (int)$m[1];
+    }
+
+    /** Профиль владельца вебхука (тимлид, от чьего имени работает приложение). */
+    public function getOwner(): ?array
+    {
+        $ownerId = $this->getOwnerId();
+        return $ownerId !== null ? $this->getUser($ownerId) : null;
+    }
+
     /**
      * Инстансы событий календаря владельца вебхука за период
      * (повторяющиеся серии приходят развёрнутыми в отдельные инстансы).

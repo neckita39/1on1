@@ -14,6 +14,7 @@ export interface Employee {
   id: number
   name: string
   nameInstr: string | null
+  isManager: boolean
   position: string | null
   bio: string | null
   bitrixId: number | null
@@ -87,12 +88,13 @@ export const authApi = {
 export const employeesApi = {
   list: () => api.get<Employee[]>('/employees'),
   get: (id: number) => api.get<Employee>(`/employees/${id}`),
-  create: (data: { name: string; nameInstr?: string; position?: string; bio?: string; bitrixId?: number; avatarUrl?: string }) => api.post<Employee>('/employees', data),
-  update: (id: number, data: { name?: string; nameInstr?: string | null; position?: string; bio?: string; bitrixId?: number | null; avatarUrl?: string | null }) => api.put<Employee>(`/employees/${id}`, data),
+  create: (data: { name: string; nameInstr?: string; isManager?: boolean; position?: string; bio?: string; bitrixId?: number; avatarUrl?: string }) => api.post<Employee>('/employees', data),
+  update: (id: number, data: { name?: string; nameInstr?: string | null; isManager?: boolean; position?: string; bio?: string; bitrixId?: number | null; avatarUrl?: string | null }) => api.put<Employee>(`/employees/${id}`, data),
   delete: (id: number) => api.delete(`/employees/${id}`),
   bitrixStatus: () => api.get<{ configured: boolean }>('/employees/bitrix-status'),
   bitrixPreview: (bitrixId: number) => api.get<BitrixUserPreview>(`/employees/bitrix-preview/${bitrixId}`),
   syncCalendar: () => api.post<CalendarSyncResult>('/bitrix/sync-calendar'),
+  bitrixMe: () => api.get<BitrixUserPreview>('/bitrix/me'),
 }
 
 export const agendaApi = {
