@@ -23,10 +23,16 @@ const ShellContext = createContext<ShellData>({
 
 export const useShell = () => useContext(ShellContext)
 
-// самый срочный сотрудник — по нему живут «Ближайшая встреча» и пункт «Встреча»
+// «Ближайшая встреча» и пункт «Встреча»: сначала по календарю Б24, иначе — самый просроченный
 export function mostDue(employees: Employee[]): Employee | null {
   if (employees.length === 0) return null
-  return [...employees].sort((a, b) => urgency(a.lastMeetingDate).due - urgency(b.lastMeetingDate).due)[0]
+  const scheduled = employees.filter(e => e.nextMeetingAt)
+  if (scheduled.length > 0) {
+    return [...scheduled].sort((a, b) => (a.nextMeetingAt! < b.nextMeetingAt! ? -1 : 1))[0]
+  }
+  return [...employees].sort(
+    (a, b) => urgency(a.lastMeetingDate, a.nextMeetingAt).due - urgency(b.lastMeetingDate, b.nextMeetingAt).due
+  )[0]
 }
 
 function NavItem({ label, badge, active, onClick }: {
@@ -178,7 +184,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
                   <Avatar name={next.name} id={next.id} url={next.avatarUrl} size={28} />
                   <div className="flex flex-col min-w-0" style={{ gap: 1 }}>
                     <div className="truncate" style={{ fontSize: 13, fontWeight: 500 }}>{next.name}</div>
-                    <div style={{ fontSize: 12, color: '#828B95' }}>{urgency(next.lastMeetingDate).label}</div>
+                    <div style={{ fontSize: 12, color: '#828B95' }}>{urgency(next.lastMeetingDate, next.nextMeetingAt).label}</div>
                   </div>
                 </div>
               </div>

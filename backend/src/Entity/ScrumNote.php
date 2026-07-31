@@ -30,6 +30,9 @@ class ScrumNote
     #[ORM\Column(type: Types::STRING, length: 20, options: ['default' => 'sos'])]
     private string $tab = 'sos';
 
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $people = null;
+
     public function __construct()
     {
         $this->date = new \DateTime();
@@ -53,4 +56,21 @@ class ScrumNote
 
     public function getTab(): string { return $this->tab; }
     public function setTab(string $tab): self { $this->tab = $tab; return $this; }
+
+    /** @return int[] id сотрудников, из чьих 1-1 выросла заметка */
+    public function getPeople(): array
+    {
+        if ($this->people === null) {
+            return [];
+        }
+        return array_values(array_filter(array_map('intval', json_decode($this->people, true) ?? [])));
+    }
+
+    /** @param int[] $people */
+    public function setPeople(array $people): self
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $people))));
+        $this->people = $ids === [] ? null : json_encode($ids);
+        return $this;
+    }
 }

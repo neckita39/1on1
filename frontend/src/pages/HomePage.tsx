@@ -76,7 +76,7 @@ function EmployeeCardNew({ employee, meetings, index }: {
   index: number
 }) {
   const navigate = useNavigate()
-  const u = urgency(employee.lastMeetingDate)
+  const u = urgency(employee.lastMeetingDate, employee.nextMeetingAt)
   return (
     <Card
       hover
@@ -132,7 +132,7 @@ export default function HomePage() {
   const toast = useToast()
 
   const sorted = useMemo(
-    () => [...employees].sort((a, b) => urgency(a.lastMeetingDate).due - urgency(b.lastMeetingDate).due),
+    () => [...employees].sort((a, b) => urgency(a.lastMeetingDate, a.nextMeetingAt).due - urgency(b.lastMeetingDate, b.nextMeetingAt).due),
     [employees]
   )
 
@@ -159,10 +159,10 @@ export default function HomePage() {
     return withMood.reduce((s, m) => s + (m.mood as number), 0) / withMood.length
   }, [meetings])
 
-  const lateCount = sorted.filter(e => urgency(e.lastMeetingDate).due < 0).length
+  const lateCount = sorted.filter(e => urgency(e.lastMeetingDate, e.nextMeetingAt).due < 0).length
 
   const filtered = sorted.filter(e => {
-    const due = urgency(e.lastMeetingDate).due
+    const due = urgency(e.lastMeetingDate, e.nextMeetingAt).due
     if (filter === 'soon' && !(due >= 0 && due <= 2)) return false
     if (filter === 'late' && due >= 0) return false
     if (search.trim()) {
@@ -281,6 +281,7 @@ function AddEmployeeModal({ onClose, onAdded }: {
 }) {
   const [mode, setMode] = useState<'manual' | 'bitrix'>('manual')
   const [name, setName] = useState('')
+  const [nameInstr, setNameInstr] = useState('')
   const [position, setPosition] = useState('')
   const [bitrixOk, setBitrixOk] = useState(false)
   const [bitrixId, setBitrixId] = useState('')
@@ -318,6 +319,7 @@ function AddEmployeeModal({ onClose, onAdded }: {
     try {
       const res = await employeesApi.create({
         name: name.trim(),
+        nameInstr: nameInstr.trim() || undefined,
         position: position.trim() || undefined,
         ...(mode === 'bitrix' && preview ? {
           bitrixId: parseInt(bitrixId),
@@ -406,6 +408,16 @@ function AddEmployeeModal({ onClose, onAdded }: {
               style={{ height: 40 }}
               autoFocus={mode === 'manual'}
               required
+            />
+          </label>
+          <label className="flex flex-col" style={{ gap: 8 }}>
+            <span style={{ fontSize: 13, color: '#525C69' }}>Имя в творительном падеже — для «1-1 с …»</span>
+            <input
+              value={nameInstr}
+              onChange={e => setNameInstr(e.target.value)}
+              placeholder="Анной"
+              className="input-spec"
+              style={{ height: 40 }}
             />
           </label>
           <label className="flex flex-col" style={{ gap: 8 }}>

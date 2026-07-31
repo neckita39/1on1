@@ -13,13 +13,29 @@ export interface AuthStatus {
 export interface Employee {
   id: number
   name: string
+  nameInstr: string | null
   position: string | null
   bio: string | null
   bitrixId: number | null
   avatarUrl: string | null
+  meetingRule: string | null
+  nextMeetingAt: string | null
   lastMeetingDate: string | null
   agendaCount: number
   createdAt: string
+}
+
+export interface CalendarSyncResult {
+  matched: {
+    employeeId: number
+    employeeName: string
+    eventName: string
+    rule: string | null
+    next: string | null
+  }[]
+  unmatchedEvents: string[]
+  unmatchedEmployees: string[]
+  syncedAt: string
 }
 
 export interface BitrixUserPreview {
@@ -71,11 +87,12 @@ export const authApi = {
 export const employeesApi = {
   list: () => api.get<Employee[]>('/employees'),
   get: (id: number) => api.get<Employee>(`/employees/${id}`),
-  create: (data: { name: string; position?: string; bio?: string; bitrixId?: number; avatarUrl?: string }) => api.post<Employee>('/employees', data),
-  update: (id: number, data: { name?: string; position?: string; bio?: string; bitrixId?: number | null; avatarUrl?: string | null }) => api.put<Employee>(`/employees/${id}`, data),
+  create: (data: { name: string; nameInstr?: string; position?: string; bio?: string; bitrixId?: number; avatarUrl?: string }) => api.post<Employee>('/employees', data),
+  update: (id: number, data: { name?: string; nameInstr?: string | null; position?: string; bio?: string; bitrixId?: number | null; avatarUrl?: string | null }) => api.put<Employee>(`/employees/${id}`, data),
   delete: (id: number) => api.delete(`/employees/${id}`),
   bitrixStatus: () => api.get<{ configured: boolean }>('/employees/bitrix-status'),
   bitrixPreview: (bitrixId: number) => api.get<BitrixUserPreview>(`/employees/bitrix-preview/${bitrixId}`),
+  syncCalendar: () => api.post<CalendarSyncResult>('/bitrix/sync-calendar'),
 }
 
 export const agendaApi = {
@@ -105,15 +122,16 @@ export interface ScrumNote {
   content: string
   date: string
   tab: ScrumTab
+  people: number[]
   createdAt: string
   updatedAt: string
 }
 
 export const scrumApi = {
   list: () => api.get<ScrumNote[]>('/scrum-notes'),
-  create: (data: { content: string; date?: string; tab?: ScrumTab }) =>
+  create: (data: { content: string; date?: string; tab?: ScrumTab; people?: number[] }) =>
     api.post<ScrumNote>('/scrum-notes', data),
-  update: (id: number, data: { content?: string; date?: string; tab?: ScrumTab }) =>
+  update: (id: number, data: { content?: string; date?: string; tab?: ScrumTab; people?: number[] }) =>
     api.put<ScrumNote>(`/scrum-notes/${id}`, data),
 }
 

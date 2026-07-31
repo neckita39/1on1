@@ -1,8 +1,66 @@
 import { useMemo, useState } from 'react'
-import { scrumApi, ScrumNote, ScrumTab } from '../api/client'
+import { useNavigate } from 'react-router-dom'
+import { scrumApi, Employee, ScrumNote, ScrumTab } from '../api/client'
 import { useShell } from '../layout/AppShell'
-import { Button, Card, Pill, formatDateRuFull } from '../ui'
+import { Avatar, Button, Card, Pill, formatDateRuFull } from '../ui'
 import { useToast } from '../ui/toast'
+
+function PeoplePicker({ selected, onToggle }: { selected: number[]; onToggle: (id: number) => void }) {
+  const { employees } = useShell()
+  if (employees.length === 0) return null
+  return (
+    <div className="flex items-center flex-wrap" style={{ gap: 6 }}>
+      <span style={{ fontSize: 12, color: '#A5AEB8', marginRight: 4 }}>Из чьих 1-1:</span>
+      {employees.map(e => {
+        const active = selected.includes(e.id)
+        return (
+          <button
+            key={e.id}
+            type="button"
+            onClick={() => onToggle(e.id)}
+            title={e.name}
+            className="rounded-full transition-all"
+            style={{
+              padding: 2,
+              border: active ? '2px solid #0075FF' : '2px solid transparent',
+              opacity: active ? 1 : .45,
+              transform: active ? 'scale(1.05)' : 'scale(1)',
+              transitionDuration: '.2s',
+            }}
+          >
+            <Avatar name={e.name} id={e.id} url={e.avatarUrl} size={26} />
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function AvatarStack({ ids, employees }: { ids: number[]; employees: Employee[] }) {
+  const navigate = useNavigate()
+  const people = ids.map(id => employees.find(e => e.id === id)).filter(Boolean) as Employee[]
+  if (people.length === 0) return null
+  return (
+    <div className="flex items-center ml-auto" style={{ gap: 8 }}>
+      <span style={{ fontSize: 12, color: '#A5AEB8' }}>
+        Из 1-1 с {people.length} сотр.
+      </span>
+      <div className="flex">
+        {people.map(p => (
+          <button
+            key={p.id}
+            onClick={() => navigate(`/employees/${p.id}`)}
+            title={p.name}
+            className="rounded-full transition-transform hover:-translate-y-[2px]"
+            style={{ border: '2px solid #fff', marginLeft: -7, transitionDuration: '.2s' }}
+          >
+            <Avatar name={p.name} id={p.id} url={p.avatarUrl} size={24} />
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 const TABS: { key: ScrumTab; label: string; hint: string; color: string }[] = [
   { key: 'sos', label: 'Скрам над скрамом', hint: 'Что вынесли из 1-1 на уровень команды', color: '#0075FF' },
@@ -10,9 +68,15 @@ const TABS: { key: ScrumTab; label: string; hint: string; color: string }[] = [
   { key: 'decisions', label: 'Решения', hint: 'Что решили и кому сказали', color: '#1BCE7B' },
 ]
 
-function NoteCard({ note, index, onSaved }: { note: ScrumNote; index: number; onSaved: () => void }) {
+function NoteCard({ note, index, employees, onSaved }: {
+  note: ScrumNote
+  index: number
+  employees: Employee[]
+  onSaved: () => void
+}) {
   const [editing, setEditing] = useState(false)
   const [content, setContent] = useState(note.content)
+  const [people, setPeople] = useState<number[]>(note.people)
   const [saving, setSaving] = useState(false)
   const tab = TABS.find(t => t.key === note.tab) ?? TABS[0]
 
@@ -20,7 +84,7 @@ function NoteCard({ note, index, onSaved }: { note: ScrumNote; index: number; on
     if (!content.trim()) return
     setSaving(true)
     try {
-      await scrumApi.update(note.id, { content: content.trim() })
+      await scrumApi.update(note.id, { content: content.trim(), people })
       setEditing(false)
       onSaved()
     } catch (e) {
@@ -39,10 +103,11 @@ function NoteCard({ note, index, onSaved }: { note: ScrumNote; index: number; on
         <div className="flex items-center" style={{ gap: 10 }}>
           <Pill color={tab.color}>{tab.label}</Pill>
           <span style={{ fontSize: 12, color: '#828B95' }}>{formatDateRuFull(note.date)}</span>
+          {!editing && <AvatarStack ids={note.people} employees={employees} />}
           {!editing && (
             <button
-              onClick={() => { setEditing(true); setContent(note.content) }}
-              className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={() => { setEditing(true); setContent(note.content); setPeople(note.people) }}
+              className={`opacity-0 group-hover:opacity-100 transition-opacity ${note.people.length === 0 ? 'ml-auto' : ''}`}
               style={{ fontSize: 12, fontWeight: 500, color: '#0154C8' }}
             >
               Изменить
@@ -58,6 +123,10 @@ function NoteCard({ note, index, onSaved }: { note: ScrumNote; index: number; on
               className="input-spec"
               style={{ height: 'auto', padding: 13, borderRadius: 12, fontSize: 14, lineHeight: 1.6, resize: 'vertical' }}
               autoFocus
+            />
+            <PeoplePicker
+              selected={people}
+              onToggle={id => setPeople(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id])}
             />
             <div className="flex justify-end" style={{ gap: 8 }}>
               <Button variant="secondary" onClick={() => setEditing(false)}>Отмена</Button>
@@ -75,9 +144,10 @@ function NoteCard({ note, index, onSaved }: { note: ScrumNote; index: number; on
 }
 
 export default function ScrumPage() {
-  const { scrumNotes, reload } = useShell()
+  const { scrumNotes, employees, reload } = useShell()
   const [tab, setTab] = useState<ScrumTab>('sos')
   const [draft, setDraft] = useState('')
+  const [draftPeople, setDraftPeople] = useState<number[]>([])
   const [saving, setSaving] = useState(false)
   const toast = useToast()
 
@@ -96,8 +166,14 @@ export default function ScrumPage() {
     if (!draft.trim()) return
     setSaving(true)
     try {
-      await scrumApi.create({ content: draft.trim(), tab, date: new Date().toISOString().split('T')[0] })
+      await scrumApi.create({
+        content: draft.trim(),
+        tab,
+        date: new Date().toISOString().split('T')[0],
+        people: draftPeople,
+      })
       setDraft('')
+      setDraftPeople([])
       toast('Записано')
       await reload()
     } catch (e) {
@@ -169,6 +245,10 @@ export default function ScrumPage() {
             className="input-spec"
             style={{ minHeight: 74, height: 'auto', padding: 13, borderRadius: 12, fontSize: 14, lineHeight: 1.6, resize: 'vertical' }}
           />
+          <PeoplePicker
+            selected={draftPeople}
+            onToggle={id => setDraftPeople(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id])}
+          />
           <div className="flex items-center" style={{ gap: 12 }}>
             <Button onClick={submit} disabled={saving || !draft.trim()} style={{ height: 38 }}>
               {saving ? 'Записываем…' : 'Записать'}
@@ -185,7 +265,7 @@ export default function ScrumPage() {
       ) : (
         <div className="flex flex-col" style={{ gap: 12 }}>
           {notes.map((n, i) => (
-            <NoteCard key={n.id} note={n} index={i} onSaved={reload} />
+            <NoteCard key={n.id} note={n} index={i} employees={employees} onSaved={reload} />
           ))}
         </div>
       )}

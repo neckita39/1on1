@@ -119,4 +119,25 @@ if (!in_array('tab', $scrumCols)) {
     $pdo->exec("ALTER TABLE scrum_notes ADD COLUMN tab VARCHAR(20) NOT NULL DEFAULT 'sos'");
 }
 
+// Migration: add people column to scrum_notes (JSON array of employee ids)
+$scrumCols2 = $pdo->query("PRAGMA table_info(scrum_notes)")->fetchAll(PDO::FETCH_COLUMN, 1);
+if (!in_array('people', $scrumCols2)) {
+    $pdo->exec("ALTER TABLE scrum_notes ADD COLUMN people TEXT");
+}
+
+// Migration: add name_instr and calendar sync columns to employees
+$employeeCols3 = $pdo->query("PRAGMA table_info(employees)")->fetchAll(PDO::FETCH_COLUMN, 1);
+if (!in_array('name_instr', $employeeCols3)) {
+    $pdo->exec("ALTER TABLE employees ADD COLUMN name_instr VARCHAR(255)");
+}
+if (!in_array('calendar_event_id', $employeeCols3)) {
+    $pdo->exec("ALTER TABLE employees ADD COLUMN calendar_event_id INTEGER");
+}
+if (!in_array('meeting_rule', $employeeCols3)) {
+    $pdo->exec("ALTER TABLE employees ADD COLUMN meeting_rule VARCHAR(255)");
+}
+if (!in_array('next_meeting_at', $employeeCols3)) {
+    $pdo->exec("ALTER TABLE employees ADD COLUMN next_meeting_at DATETIME");
+}
+
 echo "Database initialized successfully\n";

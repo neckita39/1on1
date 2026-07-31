@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { useState, useEffect, createContext, useContext } from 'react'
 import { authApi, AuthStatus } from './api/client'
-import { I18nProvider } from './i18n'
 import { ToastProvider } from './ui/toast'
 import AppShell from './layout/AppShell'
 import Splash from './components/Splash'
@@ -80,26 +79,24 @@ function ProtectedLayout() {
 function App() {
   return (
     <BrowserRouter>
-      <I18nProvider>
-        <AuthProvider>
-          <ToastProvider>
-            <Splash />
-            <Routes>
-              <Route path="/setup" element={<SetupPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route element={<ProtectedLayout />}>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/employees/:id" element={<EmployeePage />} />
-                <Route path="/meeting/:id" element={<MeetingPage />} />
-                <Route path="/history" element={<HistoryPage />} />
-                <Route path="/daily" element={<DailyPage />} />
-                <Route path="/important" element={<ImportantPage />} />
-                <Route path="/scrum" element={<ScrumPage />} />
-              </Route>
-            </Routes>
-          </ToastProvider>
-        </AuthProvider>
-      </I18nProvider>
+      <AuthProvider>
+        <ToastProvider>
+          <Splash />
+          <Routes>
+            <Route path="/setup" element={<SetupPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route element={<ProtectedLayout />}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/employees/:id" element={<EmployeePage />} />
+              <Route path="/meeting/:id" element={<MeetingPage />} />
+              <Route path="/history" element={<HistoryPage />} />
+              <Route path="/daily" element={<DailyPage />} />
+              <Route path="/important" element={<ImportantPage />} />
+              <Route path="/scrum" element={<ScrumPage />} />
+            </Route>
+          </Routes>
+        </ToastProvider>
+      </AuthProvider>
     </BrowserRouter>
   )
 }

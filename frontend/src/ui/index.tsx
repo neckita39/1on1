@@ -34,7 +34,33 @@ export function dueDays(lastMeetingDate: string | null): number | null {
   return 7 - daysSince
 }
 
-export function urgency(lastMeetingDate: string | null): { label: string; color: string; due: number } {
+const WEEKDAYS_SHORT = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб']
+
+function daysUntil(date: Date): number {
+  const startToday = new Date()
+  startToday.setHours(0, 0, 0, 0)
+  const startThat = new Date(date)
+  startThat.setHours(0, 0, 0, 0)
+  return Math.round((startThat.getTime() - startToday.getTime()) / MS_DAY)
+}
+
+// Срочность: если из календаря Б24 известна следующая встреча — по ней,
+// иначе по давности последнего 1-1 (ритм раз в 7 дней).
+export function urgency(
+  lastMeetingDate: string | null,
+  nextMeetingAt?: string | null
+): { label: string; color: string; due: number } {
+  if (nextMeetingAt) {
+    const next = new Date(nextMeetingAt.replace(' ', 'T'))
+    if (!isNaN(next.getTime())) {
+      const due = daysUntil(next)
+      const time = next.toTimeString().slice(0, 5)
+      if (due <= 0) return { label: `Сегодня, ${time}`, color: '#FAA72C', due: 0 }
+      if (due === 1) return { label: `Завтра, ${time}`, color: '#FAA72C', due }
+      const label = `${WEEKDAYS_SHORT[next.getDay()]}, ${formatDateRu(nextMeetingAt.slice(0, 10))}, ${time}`
+      return { label, color: due <= 3 ? '#FAA72C' : '#1BCE7B', due }
+    }
+  }
   const due = dueDays(lastMeetingDate)
   if (due === null) return { label: 'Ещё не было 1-1', color: '#FF5752', due: -999 }
   if (due < 0) return { label: `Просрочено на ${-due} ${plural(-due, 'день', 'дня', 'дней')}`, color: '#FF5752', due }

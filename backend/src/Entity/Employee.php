@@ -32,6 +32,18 @@ class Employee
     #[ORM\Column(name: 'avatar_url', type: Types::STRING, length: 500, nullable: true)]
     private ?string $avatarUrl = null;
 
+    #[ORM\Column(name: 'name_instr', type: Types::STRING, length: 255, nullable: true)]
+    private ?string $nameInstr = null;
+
+    #[ORM\Column(name: 'calendar_event_id', type: Types::INTEGER, nullable: true)]
+    private ?int $calendarEventId = null;
+
+    #[ORM\Column(name: 'meeting_rule', type: Types::STRING, length: 255, nullable: true)]
+    private ?string $meetingRule = null;
+
+    #[ORM\Column(name: 'next_meeting_at', type: Types::DATETIME_MUTABLE, nullable: true)]
+    private ?\DateTime $nextMeetingAt = null;
+
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private \DateTime $createdAt;
 
@@ -107,6 +119,50 @@ class Employee
     public function setAvatarUrl(?string $avatarUrl): self
     {
         $this->avatarUrl = $avatarUrl;
+        return $this;
+    }
+
+    public function getNameInstr(): ?string
+    {
+        return $this->nameInstr;
+    }
+
+    public function setNameInstr(?string $nameInstr): self
+    {
+        $this->nameInstr = $nameInstr;
+        return $this;
+    }
+
+    public function getCalendarEventId(): ?int
+    {
+        return $this->calendarEventId;
+    }
+
+    public function setCalendarEventId(?int $calendarEventId): self
+    {
+        $this->calendarEventId = $calendarEventId;
+        return $this;
+    }
+
+    public function getMeetingRule(): ?string
+    {
+        return $this->meetingRule;
+    }
+
+    public function setMeetingRule(?string $meetingRule): self
+    {
+        $this->meetingRule = $meetingRule;
+        return $this;
+    }
+
+    public function getNextMeetingAt(): ?\DateTime
+    {
+        return $this->nextMeetingAt;
+    }
+
+    public function setNextMeetingAt(?\DateTime $nextMeetingAt): self
+    {
+        $this->nextMeetingAt = $nextMeetingAt;
         return $this;
     }
 

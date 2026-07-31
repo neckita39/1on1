@@ -129,7 +129,9 @@ export default function MeetingPage() {
       <Card className="flex items-center" style={{ padding: '16px 20px', gap: 16 }}>
         <Avatar name={employee.name} id={employee.id} url={employee.avatarUrl} size={44} />
         <div className="flex-1 min-w-0">
-          <div style={{ fontSize: 18, fontWeight: 600, letterSpacing: '-.4px' }}>1-1 · {employee.name}</div>
+          <div style={{ fontSize: 18, fontWeight: 600, letterSpacing: '-.4px' }}>
+            {employee.nameInstr ? `1-1 с ${employee.nameInstr}` : `1-1 · ${employee.name}`}
+          </div>
           <div className="flex items-center" style={{ gap: 8, marginTop: 2 }}>
             <span style={{ fontSize: 13, color: '#828B95' }}>
               {new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })}

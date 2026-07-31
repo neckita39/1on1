@@ -38,6 +38,7 @@ class ScrumController extends AbstractController
             'content' => $note->getContent(),
             'date' => $note->getDate()->format('Y-m-d'),
             'tab' => $note->getTab(),
+            'people' => $note->getPeople(),
             'createdAt' => $note->getCreatedAt()->format('c'),
             'updatedAt' => $note->getUpdatedAt()->format('c'),
         ], $notes));
@@ -59,6 +60,9 @@ class ScrumController extends AbstractController
         if (!empty($data['tab']) && in_array($data['tab'], ['sos', 'topics', 'decisions'], true)) {
             $note->setTab($data['tab']);
         }
+        if (isset($data['people']) && is_array($data['people'])) {
+            $note->setPeople($data['people']);
+        }
         $this->em->persist($note);
         $this->em->flush();
         return $this->json([
@@ -66,6 +70,7 @@ class ScrumController extends AbstractController
             'content' => $note->getContent(),
             'date' => $note->getDate()->format('Y-m-d'),
             'tab' => $note->getTab(),
+            'people' => $note->getPeople(),
             'createdAt' => $note->getCreatedAt()->format('c'),
             'updatedAt' => $note->getUpdatedAt()->format('c'),
         ], Response::HTTP_CREATED);
@@ -89,6 +94,9 @@ class ScrumController extends AbstractController
         if (!empty($data['tab']) && in_array($data['tab'], ['sos', 'topics', 'decisions'], true)) {
             $note->setTab($data['tab']);
         }
+        if (isset($data['people']) && is_array($data['people'])) {
+            $note->setPeople($data['people']);
+        }
         $note->setUpdatedAt(new \DateTime());
         $this->em->flush();
         return $this->json([
@@ -96,6 +104,7 @@ class ScrumController extends AbstractController
             'content' => $note->getContent(),
             'date' => $note->getDate()->format('Y-m-d'),
             'tab' => $note->getTab(),
+            'people' => $note->getPeople(),
             'createdAt' => $note->getCreatedAt()->format('c'),
             'updatedAt' => $note->getUpdatedAt()->format('c'),
         ]);

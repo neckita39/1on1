@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react'
-import { useI18n } from '../i18n'
 
 const STORAGE_KEY = 'clock-timezone'
 
@@ -55,7 +54,6 @@ export default function ClockWidget() {
   const [search, setSearch] = useState('')
   const pickerRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
-  const { t } = useI18n()
 
   useEffect(() => {
     const tick = () => setTime(formatTime(timezone))
@@ -104,7 +102,7 @@ export default function ClockWidget() {
         style={{ fontSize: 12, color: '#828B95' }}
         onMouseEnter={e => { e.currentTarget.style.color = '#525C69' }}
         onMouseLeave={e => { e.currentTarget.style.color = '#828B95' }}
-        title={`${timezone} — ${t('changeTimezone')}`}
+        title={`${timezone} — сменить часовой пояс`}
       >
         <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="10" strokeWidth="2" />
@@ -122,7 +120,7 @@ export default function ClockWidget() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder={t('searchTimezone')}
+              placeholder="Поиск часового пояса"
               className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -144,7 +142,7 @@ export default function ClockWidget() {
               )
             })}
             {filtered.length === 0 && (
-              <div className="px-3 py-2 text-sm text-gray-400">{t('noResults')}</div>
+              <div className="px-3 py-2 text-sm text-gray-400">Ничего не нашлось</div>
             )}
           </div>
         </div>

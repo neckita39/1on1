@@ -41,10 +41,13 @@ class EmployeeController extends AbstractController
         return $this->json(array_map(fn(Employee $e) => [
             'id' => $e->getId(),
             'name' => $e->getName(),
+            'nameInstr' => $e->getNameInstr(),
             'position' => $e->getPosition(),
             'bio' => $e->getBio(),
             'bitrixId' => $e->getBitrixId(),
             'avatarUrl' => $e->getAvatarUrl(),
+            'meetingRule' => $e->getMeetingRule(),
+            'nextMeetingAt' => $e->getNextMeetingAt()?->format('Y-m-d H:i'),
             'lastMeetingDate' => $e->getLastMeeting()?->getDate()->format('Y-m-d'),
             'agendaCount' => $e->getActiveAgendaCount(),
             'createdAt' => $e->getCreatedAt()->format('c')
@@ -73,6 +76,7 @@ class EmployeeController extends AbstractController
 
         $employee = new Employee();
         $employee->setName($data['name']);
+        $employee->setNameInstr($data['nameInstr'] ?? null);
         $employee->setPosition($data['position'] ?? null);
         $employee->setBio($data['bio'] ?? null);
         $employee->setBitrixId($bitrixId);
@@ -84,6 +88,7 @@ class EmployeeController extends AbstractController
         return $this->json([
             'id' => $employee->getId(),
             'name' => $employee->getName(),
+            'nameInstr' => $employee->getNameInstr(),
             'position' => $employee->getPosition(),
             'bio' => $employee->getBio(),
             'bitrixId' => $employee->getBitrixId(),
@@ -136,10 +141,13 @@ class EmployeeController extends AbstractController
         return $this->json([
             'id' => $employee->getId(),
             'name' => $employee->getName(),
+            'nameInstr' => $employee->getNameInstr(),
             'position' => $employee->getPosition(),
             'bio' => $employee->getBio(),
             'bitrixId' => $employee->getBitrixId(),
             'avatarUrl' => $employee->getAvatarUrl(),
+            'meetingRule' => $employee->getMeetingRule(),
+            'nextMeetingAt' => $employee->getNextMeetingAt()?->format('Y-m-d H:i'),
             'lastMeetingDate' => $employee->getLastMeeting()?->getDate()->format('Y-m-d'),
             'agendaCount' => $employee->getActiveAgendaCount(),
             'createdAt' => $employee->getCreatedAt()->format('c')
@@ -161,6 +169,9 @@ class EmployeeController extends AbstractController
 
         if (isset($data['name']) && !empty($data['name'])) {
             $employee->setName($data['name']);
+        }
+        if (array_key_exists('nameInstr', $data)) {
+            $employee->setNameInstr($data['nameInstr'] ?: null);
         }
         if (array_key_exists('position', $data)) {
             $employee->setPosition($data['position']);
@@ -187,6 +198,7 @@ class EmployeeController extends AbstractController
         return $this->json([
             'id' => $employee->getId(),
             'name' => $employee->getName(),
+            'nameInstr' => $employee->getNameInstr(),
             'position' => $employee->getPosition(),
             'bio' => $employee->getBio(),
             'bitrixId' => $employee->getBitrixId(),

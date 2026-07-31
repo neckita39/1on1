@@ -108,6 +108,14 @@ function MeetingRow({ meeting }: { meeting: Meeting }) {
   )
 }
 
+const WEEKDAYS_FULL = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота']
+
+function formatNextRu(value: string): string {
+  const d = new Date(value.replace(' ', 'T'))
+  if (isNaN(d.getTime())) return value
+  return `${WEEKDAYS_FULL[d.getDay()]}, ${formatDateRu(value.slice(0, 10))}, ${value.slice(11, 16)}`
+}
+
 function Bitrix24Block({ employee, onChanged }: { employee: Employee; onChanged: () => void }) {
   const [configured, setConfigured] = useState(false)
   const [on, setOn] = useState(() => localStorage.getItem(`b24-series-${employee.id}`) !== 'off')
@@ -115,6 +123,9 @@ function Bitrix24Block({ employee, onChanged }: { employee: Employee; onChanged:
   const [preview, setPreview] = useState<BitrixUserPreview | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [syncing, setSyncing] = useState(false)
+  const [syncProg, setSyncProg] = useState(0)
+  const [journal, setJournal] = useState<{ text: string; color: string }[]>([])
   const toast = useToast()
 
   useEffect(() => {
@@ -125,6 +136,36 @@ function Bitrix24Block({ employee, onChanged }: { employee: Employee; onChanged:
     const next = !on
     setOn(next)
     localStorage.setItem(`b24-series-${employee.id}`, next ? 'on' : 'off')
+  }
+
+  const runSync = async () => {
+    setSyncing(true)
+    setSyncProg(0)
+    const ticker = setInterval(() => setSyncProg(p => Math.min(p + 12, 90)), 130)
+    try {
+      const res = await employeesApi.syncCalendar()
+      clearInterval(ticker)
+      setSyncProg(100)
+      const d = res.data
+      const mine = d.matched.find(m => m.employeeId === employee.id)
+      const entries: { text: string; color: string }[] = []
+      if (mine) {
+        entries.push({ text: `Найдена серия «${mine.eventName}»`, color: '#1BCE7B' })
+      } else {
+        entries.push({ text: 'Серия 1-1 для сотрудника в календаре не найдена', color: '#FAA72C' })
+      }
+      entries.push({ text: `Привязано встреч: ${d.matched.length}`, color: '#0075FF' })
+      d.unmatchedEvents.slice(0, 2).forEach(n => entries.push({ text: `Без пары: «${n}»`, color: '#A5AEB8' }))
+      setJournal(entries.slice(0, 4))
+      toast('Синхронизировано с Битрикс24')
+      onChanged()
+    } catch {
+      clearInterval(ticker)
+      setJournal([{ text: 'Не удалось получить календарь Битрикс24', color: '#FF5752' }])
+    } finally {
+      setSyncing(false)
+      setTimeout(() => setSyncProg(0), 600)
+    }
   }
 
   const lookup = async () => {
@@ -207,52 +248,103 @@ function Bitrix24Block({ employee, onChanged }: { employee: Employee; onChanged:
             Вебхук Битрикс24 не настроен. Добавьте <code style={{ fontSize: 12 }}>BITRIX24_WEBHOOK_URL</code> в
             «.env» — и здесь появится синхронизация с календарём.
           </div>
-        ) : employee.bitrixId ? (
+        ) : (
           <>
             <div className="flex items-center" style={{ gap: 8 }}>
               <span
                 className="rounded-full flex-none"
-                style={{ width: 7, height: 7, background: '#1BCE7B', animation: 'dotPulse 2.2s ease-in-out infinite' }}
+                style={{
+                  width: 7, height: 7,
+                  background: syncing ? '#FAA72C' : employee.meetingRule ? '#1BCE7B' : '#D5DDE5',
+                  animation: 'dotPulse 2.2s ease-in-out infinite',
+                }}
               />
-              <span style={{ fontSize: 13, color: '#525C69' }}>Привязан · ID {employee.bitrixId}</span>
+              <span style={{ fontSize: 13, color: '#525C69' }}>
+                {syncing ? 'Синхронизация…' : employee.meetingRule ? 'Серия найдена в календаре' : 'Серия пока не привязана'}
+              </span>
             </div>
-            <div style={{ fontSize: 12, color: '#A5AEB8' }}>
-              Имя и фото подтягиваются из профиля Битрикс24. Синхронизация календаря — скоро.
-            </div>
-            <Button variant="secondary" onClick={unlink} disabled={busy}>
-              {busy ? <Spinner /> : 'Отвязать'}
-            </Button>
-          </>
-        ) : (
-          <>
-            <div style={{ fontSize: 13, color: '#525C69' }}>
-              Привяжите сотрудника по ID из Битрикс24 — подтянем имя, фото и должность.
-            </div>
-            <div className="flex" style={{ gap: 8 }}>
-              <input
-                type="number"
-                value={linkId}
-                onChange={e => { setLinkId(e.target.value); setPreview(null); setError('') }}
-                placeholder="ID"
-                className="input-spec"
-                style={{ height: 38, fontSize: 13 }}
-                min={1}
-              />
-              <Button variant="secondary" onClick={lookup} disabled={!linkId || busy}>
-                {busy && !preview ? <Spinner /> : 'Найти'}
-              </Button>
-            </div>
-            {error && <div style={{ fontSize: 12, color: '#FF5752' }}>{error}</div>}
-            {preview && (
-              <div className="flex items-center anim-fade-up" style={{ gap: 10, animationDuration: '.3s' }}>
-                <Avatar name={preview.name} id={parseInt(linkId) || 0} url={preview.avatarUrl} size={30} />
-                <div className="flex-1 min-w-0">
-                  <div className="truncate" style={{ fontSize: 13, fontWeight: 500 }}>{preview.name}</div>
-                  {preview.position && <div className="truncate" style={{ fontSize: 12, color: '#828B95' }}>{preview.position}</div>}
-                </div>
-                <Button onClick={link} disabled={busy}>Привязать</Button>
+            {employee.meetingRule && (
+              <div style={{ fontSize: 13, color: '#333' }}>{employee.meetingRule}</div>
+            )}
+            {employee.nextMeetingAt && (
+              <div style={{ fontSize: 12, color: '#A5AEB8' }}>
+                Следующее событие: {formatNextRu(employee.nextMeetingAt)}
               </div>
             )}
+            <div style={{ height: 3, borderRadius: 3, background: '#F0F4F7', overflow: 'hidden', opacity: syncing || syncProg > 0 ? 1 : 0, transition: 'opacity .3s' }}>
+              <div
+                style={{
+                  height: '100%',
+                  background: 'linear-gradient(90deg,#0075FF,#2FC6F6)',
+                  width: `${syncProg}%`,
+                  transition: 'width .35s linear',
+                }}
+              />
+            </div>
+            <Button variant="secondary" onClick={runSync} disabled={syncing}>
+              {syncing ? (
+                <span className="flex items-center justify-center" style={{ gap: 8 }}>
+                  <Spinner /> Синхронизируем…
+                </span>
+              ) : 'Синхронизировать сейчас'}
+            </Button>
+            {journal.length > 0 && (
+              <div className="flex flex-col" style={{ gap: 8, borderTop: '1px solid #F7F7F7', paddingTop: 12 }}>
+                {journal.map((entry, i) => (
+                  <div key={i} className="flex items-center anim-fade-up" style={{ gap: 8, animationDuration: '.3s' }}>
+                    <span className="rounded-full flex-none" style={{ width: 6, height: 6, background: entry.color }} />
+                    <span style={{ fontSize: 12, color: '#525C69' }}>{entry.text}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ borderTop: '1px solid #F7F7F7', paddingTop: 12 }} className="flex flex-col gap-3">
+              {employee.bitrixId ? (
+                <div className="flex items-center justify-between" style={{ gap: 8 }}>
+                  <span style={{ fontSize: 12, color: '#A5AEB8' }}>Профиль привязан · ID {employee.bitrixId}</span>
+                  <button
+                    onClick={unlink}
+                    disabled={busy}
+                    className="transition-opacity hover:opacity-70"
+                    style={{ fontSize: 12, fontWeight: 500, color: '#828B95' }}
+                  >
+                    Отвязать
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div style={{ fontSize: 12, color: '#A5AEB8' }}>
+                    Привяжите профиль по ID из Битрикс24 — подтянем имя, фото и должность.
+                  </div>
+                  <div className="flex" style={{ gap: 8 }}>
+                    <input
+                      type="number"
+                      value={linkId}
+                      onChange={e => { setLinkId(e.target.value); setPreview(null); setError('') }}
+                      placeholder="ID"
+                      className="input-spec"
+                      style={{ height: 38, fontSize: 13 }}
+                      min={1}
+                    />
+                    <Button variant="secondary" onClick={lookup} disabled={!linkId || busy}>
+                      {busy && !preview ? <Spinner /> : 'Найти'}
+                    </Button>
+                  </div>
+                  {error && <div style={{ fontSize: 12, color: '#FF5752' }}>{error}</div>}
+                  {preview && (
+                    <div className="flex items-center anim-fade-up" style={{ gap: 10, animationDuration: '.3s' }}>
+                      <Avatar name={preview.name} id={parseInt(linkId) || 0} url={preview.avatarUrl} size={30} />
+                      <div className="flex-1 min-w-0">
+                        <div className="truncate" style={{ fontSize: 13, fontWeight: 500 }}>{preview.name}</div>
+                        {preview.position && <div className="truncate" style={{ fontSize: 12, color: '#828B95' }}>{preview.position}</div>}
+                      </div>
+                      <Button onClick={link} disabled={busy}>Привязать</Button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </>
         )}
       </div>
@@ -429,6 +521,7 @@ function EditEmployeeModal({ employee, onClose, onSaved, onDeleted }: {
   onDeleted: () => void
 }) {
   const [name, setName] = useState(employee.name)
+  const [nameInstr, setNameInstr] = useState(employee.nameInstr || '')
   const [position, setPosition] = useState(employee.position || '')
   const [bio, setBio] = useState(employee.bio || '')
   const [saving, setSaving] = useState(false)
@@ -441,6 +534,7 @@ function EditEmployeeModal({ employee, onClose, onSaved, onDeleted }: {
     try {
       await employeesApi.update(employee.id, {
         name: name.trim(),
+        nameInstr: nameInstr.trim() || null,
         position: position.trim() || undefined,
         bio: bio.trim() || undefined,
       })
@@ -469,6 +563,16 @@ function EditEmployeeModal({ employee, onClose, onSaved, onDeleted }: {
         <label className="flex flex-col" style={{ gap: 8 }}>
           <span style={{ fontSize: 13, color: '#525C69' }}>Имя и фамилия</span>
           <input value={name} onChange={e => setName(e.target.value)} className="input-spec" style={{ height: 40 }} required />
+        </label>
+        <label className="flex flex-col" style={{ gap: 8 }}>
+          <span style={{ fontSize: 13, color: '#525C69' }}>Имя в творительном падеже — для «1-1 с …»</span>
+          <input
+            value={nameInstr}
+            onChange={e => setNameInstr(e.target.value)}
+            placeholder="Анной"
+            className="input-spec"
+            style={{ height: 40 }}
+          />
         </label>
         <label className="flex flex-col" style={{ gap: 8 }}>
           <span style={{ fontSize: 13, color: '#525C69' }}>Роль</span>
