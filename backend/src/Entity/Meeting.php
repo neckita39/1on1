@@ -28,6 +28,12 @@ class Meeting
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $discussedTopics = null;
 
+    #[ORM\Column(type: Types::INTEGER, nullable: true)]
+    private ?int $mood = null;
+
+    #[ORM\Column(type: Types::INTEGER, nullable: true)]
+    private ?int $duration = null;
+
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private \DateTime $createdAt;
 
@@ -92,6 +98,28 @@ class Meeting
     public function setDiscussedTopics(array $topics): self
     {
         $this->discussedTopics = json_encode($topics, JSON_UNESCAPED_UNICODE);
+        return $this;
+    }
+
+    public function getMood(): ?int
+    {
+        return $this->mood;
+    }
+
+    public function setMood(?int $mood): self
+    {
+        $this->mood = $mood;
+        return $this;
+    }
+
+    public function getDuration(): ?int
+    {
+        return $this->duration;
+    }
+
+    public function setDuration(?int $duration): self
+    {
+        $this->duration = $duration;
         return $this;
     }
 }

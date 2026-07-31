@@ -41,8 +41,8 @@ COPY docker/supervisord.conf /etc/supervisord.conf
 # PHP config
 RUN echo "memory_limit=256M" > /usr/local/etc/php/conf.d/memory.ini
 
-# Make init script executable
-RUN chmod +x bin/init-db.php bin/console
+# Make init scripts executable
+RUN chmod +x bin/init-db.php bin/init-demo-db.php bin/console
 
 EXPOSE 80
 

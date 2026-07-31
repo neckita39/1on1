@@ -37,6 +37,7 @@ class ScrumController extends AbstractController
             'id' => $note->getId(),
             'content' => $note->getContent(),
             'date' => $note->getDate()->format('Y-m-d'),
+            'tab' => $note->getTab(),
             'createdAt' => $note->getCreatedAt()->format('c'),
             'updatedAt' => $note->getUpdatedAt()->format('c'),
         ], $notes));
@@ -55,12 +56,16 @@ class ScrumController extends AbstractController
         if (!empty($data['date'])) {
             $note->setDate(new \DateTime($data['date']));
         }
+        if (!empty($data['tab']) && in_array($data['tab'], ['sos', 'topics', 'decisions'], true)) {
+            $note->setTab($data['tab']);
+        }
         $this->em->persist($note);
         $this->em->flush();
         return $this->json([
             'id' => $note->getId(),
             'content' => $note->getContent(),
             'date' => $note->getDate()->format('Y-m-d'),
+            'tab' => $note->getTab(),
             'createdAt' => $note->getCreatedAt()->format('c'),
             'updatedAt' => $note->getUpdatedAt()->format('c'),
         ], Response::HTTP_CREATED);
@@ -81,12 +86,16 @@ class ScrumController extends AbstractController
         if (!empty($data['date'])) {
             $note->setDate(new \DateTime($data['date']));
         }
+        if (!empty($data['tab']) && in_array($data['tab'], ['sos', 'topics', 'decisions'], true)) {
+            $note->setTab($data['tab']);
+        }
         $note->setUpdatedAt(new \DateTime());
         $this->em->flush();
         return $this->json([
             'id' => $note->getId(),
             'content' => $note->getContent(),
             'date' => $note->getDate()->format('Y-m-d'),
+            'tab' => $note->getTab(),
             'createdAt' => $note->getCreatedAt()->format('c'),
             'updatedAt' => $note->getUpdatedAt()->format('c'),
         ]);

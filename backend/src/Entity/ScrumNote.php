@@ -27,6 +27,9 @@ class ScrumNote
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private \DateTime $updatedAt;
 
+    #[ORM\Column(type: Types::STRING, length: 20, options: ['default' => 'sos'])]
+    private string $tab = 'sos';
+
     public function __construct()
     {
         $this->date = new \DateTime();
@@ -47,4 +50,7 @@ class ScrumNote
 
     public function getUpdatedAt(): \DateTime { return $this->updatedAt; }
     public function setUpdatedAt(\DateTime $updatedAt): self { $this->updatedAt = $updatedAt; return $this; }
+
+    public function getTab(): string { return $this->tab; }
+    public function setTab(string $tab): self { $this->tab = $tab; return $this; }
 }

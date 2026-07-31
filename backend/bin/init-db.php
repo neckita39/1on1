@@ -104,4 +104,19 @@ $pdo->exec("
     )
 ");
 
+// Migration: add mood and duration columns to meetings if not exists
+$meetingCols = $pdo->query("PRAGMA table_info(meetings)")->fetchAll(PDO::FETCH_COLUMN, 1);
+if (!in_array('mood', $meetingCols)) {
+    $pdo->exec("ALTER TABLE meetings ADD COLUMN mood INTEGER");
+}
+if (!in_array('duration', $meetingCols)) {
+    $pdo->exec("ALTER TABLE meetings ADD COLUMN duration INTEGER");
+}
+
+// Migration: add tab column to scrum_notes if not exists
+$scrumCols = $pdo->query("PRAGMA table_info(scrum_notes)")->fetchAll(PDO::FETCH_COLUMN, 1);
+if (!in_array('tab', $scrumCols)) {
+    $pdo->exec("ALTER TABLE scrum_notes ADD COLUMN tab VARCHAR(20) NOT NULL DEFAULT 'sos'");
+}
+
 echo "Database initialized successfully\n";

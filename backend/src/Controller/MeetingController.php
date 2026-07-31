@@ -50,6 +50,29 @@ class MeetingController extends AbstractController
             'date' => $m->getDate()->format('Y-m-d'),
             'notes' => $m->getNotes(),
             'discussedTopics' => $m->getDiscussedTopics(),
+            'mood' => $m->getMood(),
+            'duration' => $m->getDuration(),
+            'createdAt' => $m->getCreatedAt()->format('c')
+        ], $meetings));
+    }
+
+    #[Route('/api/meetings', methods: ['GET'])]
+    public function listAll(Request $request): JsonResponse
+    {
+        if ($error = $this->checkAuth($request)) return $error;
+
+        $meetings = $this->meetingRepository->findBy([], ['date' => 'DESC']);
+
+        return $this->json(array_map(fn(Meeting $m) => [
+            'id' => $m->getId(),
+            'employeeId' => $m->getEmployee()->getId(),
+            'employeeName' => $m->getEmployee()->getName(),
+            'employeeAvatarUrl' => $m->getEmployee()->getAvatarUrl(),
+            'date' => $m->getDate()->format('Y-m-d'),
+            'notes' => $m->getNotes(),
+            'discussedTopics' => $m->getDiscussedTopics(),
+            'mood' => $m->getMood(),
+            'duration' => $m->getDuration(),
             'createdAt' => $m->getCreatedAt()->format('c')
         ], $meetings));
     }
@@ -78,6 +101,14 @@ class MeetingController extends AbstractController
             $meeting->setDiscussedTopics($data['discussedTopics']);
         }
 
+        if (isset($data['mood']) && is_int($data['mood']) && $data['mood'] >= 1 && $data['mood'] <= 5) {
+            $meeting->setMood($data['mood']);
+        }
+
+        if (isset($data['duration']) && is_int($data['duration']) && $data['duration'] > 0) {
+            $meeting->setDuration($data['duration']);
+        }
+
         $this->em->persist($meeting);
         $this->em->flush();
 
@@ -86,6 +117,8 @@ class MeetingController extends AbstractController
             'date' => $meeting->getDate()->format('Y-m-d'),
             'notes' => $meeting->getNotes(),
             'discussedTopics' => $meeting->getDiscussedTopics(),
+            'mood' => $meeting->getMood(),
+            'duration' => $meeting->getDuration(),
             'createdAt' => $meeting->getCreatedAt()->format('c')
         ], Response::HTTP_CREATED);
     }
