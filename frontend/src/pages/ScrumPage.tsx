@@ -188,7 +188,7 @@ export default function ScrumPage() {
   }
 
   return (
-    <div className="flex flex-col" style={{ gap: 20, maxWidth: 900 }}>
+    <div className="flex flex-col" style={{ gap: 20, maxWidth: 900, margin: '0 auto' }}>
       <div className="flex flex-col anim-fade-up" style={{ gap: 6 }}>
         <div className="eyebrow">Уровень команды</div>
         <div style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-.8px' }}>Командные заметки</div>

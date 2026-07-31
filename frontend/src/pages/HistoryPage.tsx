@@ -1,6 +1,8 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { meetingsApi } from '../api/client'
 import { useShell } from '../layout/AppShell'
+import { useToast } from '../ui/toast'
 import { Avatar, Card, MoodDot, Pill, formatDateRu } from '../ui'
 
 function statusOf(mood: number | null): { label: string; color: string } | null {
@@ -22,8 +24,21 @@ function Stat({ label, value, delay }: { label: string; value: string; delay: nu
 }
 
 export default function HistoryPage() {
-  const { meetings, loaded } = useShell()
+  const { meetings, loaded, reload } = useShell()
   const navigate = useNavigate()
+  const toast = useToast()
+  const [confirmId, setConfirmId] = useState<number | null>(null)
+
+  const removeMeeting = async (id: number) => {
+    try {
+      await meetingsApi.delete(id)
+      toast('Встреча удалена')
+      setConfirmId(null)
+      await reload()
+    } catch (e) {
+      console.error('Failed to delete meeting', e)
+    }
+  }
 
   const avgDuration = useMemo(() => {
     const withDur = meetings.filter(m => m.duration != null && m.duration > 0)
@@ -63,9 +78,9 @@ export default function HistoryPage() {
               <div
                 key={m.id}
                 onClick={() => navigate(`/employees/${m.employeeId}`)}
-                className="grid items-center cursor-pointer transition-colors anim-fade-up"
+                className="grid items-center cursor-pointer transition-colors anim-fade-up group"
                 style={{
-                  gridTemplateColumns: '120px 1fr 90px 130px 12px',
+                  gridTemplateColumns: '120px 1fr 90px 130px 12px auto',
                   gap: 16,
                   padding: '15px 20px',
                   borderBottom: i < meetings.length - 1 ? '1px solid #F7F7F7' : 'none',
@@ -87,6 +102,23 @@ export default function HistoryPage() {
                 <span style={{ fontSize: 13, color: '#525C69' }}>{m.duration ? `${m.duration} мин` : '—'}</span>
                 <span>{status ? <Pill color={status.color}>{status.label}</Pill> : null}</span>
                 <MoodDot mood={m.mood} />
+                {confirmId === m.id ? (
+                  <button
+                    onClick={e => { e.stopPropagation(); removeMeeting(m.id) }}
+                    style={{ fontSize: 12, fontWeight: 500, color: '#FF5752', whiteSpace: 'nowrap' }}
+                  >
+                    Удалить?
+                  </button>
+                ) : (
+                  <button
+                    onClick={e => { e.stopPropagation(); setConfirmId(m.id) }}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Удалить встречу"
+                    style={{ fontSize: 13, color: '#A5AEB8' }}
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
             )
           })

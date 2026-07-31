@@ -4,6 +4,7 @@ import { employeesApi, meetingsApi, scrumApi, authApi, BitrixUserPreview, Employ
 import { useAuth } from '../App'
 import { Avatar, SkeletonScreen, urgency, plural } from '../ui'
 import ClockWidget from '../components/ClockWidget'
+import { DailyProvider, DailyWidget } from '../components/DailyWidget'
 
 interface ShellData {
   employees: Employee[]
@@ -145,6 +146,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <ShellContext.Provider value={shell}>
+      <DailyProvider>
       <div className="min-h-screen bg-page grid" style={{ minWidth: 1180, gridTemplateColumns: '236px minmax(0,1fr)' }}>
         <aside
           className="sticky top-0 bg-white flex flex-col"
@@ -162,7 +164,6 @@ export default function AppShell({ children }: { children: ReactNode }) {
             <NavItem label="Команда" badge={loaded ? employees.length : undefined} active={isTeam} onClick={() => navigate('/')} />
             <NavItem
               label="Встреча"
-              badge="live"
               active={path.startsWith('/meeting')}
               onClick={() => next && navigate(`/meeting/${next.id}`)}
             />
@@ -238,6 +239,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
           {screenLoading ? <SkeletonScreen /> : children}
         </main>
       </div>
+      <DailyWidget />
+      </DailyProvider>
     </ShellContext.Provider>
   )
 }

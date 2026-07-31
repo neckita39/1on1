@@ -123,6 +123,22 @@ class MeetingController extends AbstractController
         ], Response::HTTP_CREATED);
     }
 
+    #[Route('/api/meetings/{id}', methods: ['DELETE'])]
+    public function delete(Request $request, int $id): JsonResponse
+    {
+        if ($error = $this->checkAuth($request)) return $error;
+
+        $meeting = $this->meetingRepository->find($id);
+        if (!$meeting) {
+            return $this->json(['error' => 'Meeting not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $this->em->remove($meeting);
+        $this->em->flush();
+
+        return $this->json(['success' => true]);
+    }
+
     #[Route('/api/meetings/{id}', methods: ['GET'])]
     public function show(Request $request, int $id): JsonResponse
     {

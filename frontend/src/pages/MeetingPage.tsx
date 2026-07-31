@@ -24,7 +24,9 @@ export default function MeetingPage() {
   const [notes, setNotes] = useState(() => localStorage.getItem(`meeting-draft-${employeeId}`) || '')
   const [saved, setSaved] = useState(true)
   const [mood, setMood] = useState(0)
-  const [running, setRunning] = useState(true)
+  // встреча начинается только по кнопке; непустой черновик = продолжаем прерванную
+  const [started, setStarted] = useState(() => !!localStorage.getItem(`meeting-draft-${employeeId}`))
+  const [running, setRunning] = useState(false)
   const [secs, setSecs] = useState(0)
   const [draft, setDraft] = useState('')
   const [draggedId, setDraggedId] = useState<number | null>(null)
@@ -48,13 +50,25 @@ export default function MeetingPage() {
 
   useEffect(() => {
     load()
+    // компонент не размонтируется при смене :id — сбрасываем состояние встречи
+    const draft = localStorage.getItem(`meeting-draft-${employeeId}`) || ''
+    setNotes(draft)
+    setStarted(!!draft)
+    setRunning(false)
+    setSecs(0)
+    setMood(0)
   }, [employeeId])
 
   useEffect(() => {
-    if (!running) return
+    if (!running || !started) return
     const t = setInterval(() => setSecs(s => s + 1), 1000)
     return () => clearInterval(t)
-  }, [running])
+  }, [running, started])
+
+  const start = () => {
+    setStarted(true)
+    setRunning(true)
+  }
 
   const handleNotes = (value: string) => {
     setNotes(value)
@@ -123,6 +137,39 @@ export default function MeetingPage() {
   const discussedItems = agenda.filter(i => i.isDiscussed)
 
   if (!employee) return null
+
+  // пре-экран: встреча ещё не начата — ничего не тикает и не записывается
+  if (!started) {
+    return (
+      <div className="flex flex-col anim-fade-up" style={{ gap: 20, maxWidth: 560, margin: '0 auto' }}>
+        <Card className="flex flex-col items-center" style={{ padding: '44px 32px', gap: 14 }}>
+          <Avatar name={employee.name} id={employee.id} url={employee.avatarUrl} size={64} />
+          <div className="flex flex-col items-center" style={{ gap: 4 }}>
+            <div style={{ fontSize: 24, fontWeight: 600, letterSpacing: '-.6px' }}>
+              {employee.nameInstr ? `1-1 с ${employee.nameInstr}` : `1-1 · ${employee.name}`}
+            </div>
+            {employee.meetingRule && (
+              <div style={{ fontSize: 13, color: '#828B95' }}>{employee.meetingRule}</div>
+            )}
+          </div>
+          <div style={{ fontSize: 13, color: '#A5AEB8' }}>
+            {total > 0
+              ? `В повестке ${total} ${total === 1 ? 'пункт' : total < 5 ? 'пункта' : 'пунктов'}`
+              : 'Повестка пуста — темы можно добавить по ходу'}
+          </div>
+          <div className="flex items-center" style={{ gap: 10, marginTop: 8 }}>
+            <Button variant="secondary" size="lg" onClick={() => navigate(`/employees/${employee.id}`)}>
+              К карточке
+            </Button>
+            <Button size="lg" sheen onClick={start}>Начать встречу</Button>
+          </div>
+        </Card>
+        <div style={{ fontSize: 12, color: '#A5AEB8', textAlign: 'center' }}>
+          Таймер запустится после старта. Встреча попадёт в историю только по кнопке «Завершить».
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col anim-fade-up" style={{ gap: 16 }}>

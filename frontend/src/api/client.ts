@@ -115,6 +115,7 @@ export const meetingsApi = {
   create: (employeeId: number, data: { notes: string; date?: string; discussedTopics?: string[]; mood?: number; duration?: number }) =>
     api.post<Meeting>(`/employees/${employeeId}/meetings`, data),
   get: (id: number) => api.get<Meeting>(`/meetings/${id}`),
+  delete: (id: number) => api.delete(`/meetings/${id}`),
 }
 
 export type ScrumTab = 'sos' | 'topics' | 'decisions'

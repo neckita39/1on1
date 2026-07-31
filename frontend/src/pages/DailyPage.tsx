@@ -1,18 +1,7 @@
-import { useCallback, useState } from 'react'
 import { Employee } from '../api/client'
 import { useShell } from '../layout/AppShell'
+import { useDaily } from '../components/DailyWidget'
 import { Avatar, Button, Card } from '../ui'
-
-function shuffle<T>(array: T[]): T[] {
-  const result = [...array]
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[result[i], result[j]] = [result[j], result[i]]
-  }
-  return result
-}
-
-type Phase = 'idle' | 'running' | 'done'
 
 function PersonRow({ employee, spoke, index }: { employee: Employee; spoke: boolean; index?: number }) {
   return (
@@ -39,30 +28,17 @@ function PersonRow({ employee, spoke, index }: { employee: Employee; spoke: bool
 
 export default function DailyPage() {
   const { employees } = useShell()
-  const [order, setOrder] = useState<Employee[]>([])
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [phase, setPhase] = useState<Phase>('idle')
+  const { phase, order, currentIndex, start, next } = useDaily()
 
-  const handleStart = useCallback(() => {
-    setOrder(shuffle(employees))
-    setCurrentIndex(0)
-    setPhase('running')
-  }, [employees])
-
-  const handleNext = () => {
-    if (currentIndex + 1 >= order.length) {
-      setPhase('done')
-    } else {
-      setCurrentIndex(prev => prev + 1)
-    }
-  }
+  const handleStart = () => start(employees)
+  const handleNext = next
 
   const current = phase === 'running' ? order[currentIndex] : null
   const spoke = phase === 'running' ? order.slice(0, currentIndex) : phase === 'done' ? order : []
   const waiting = phase === 'running' ? order.slice(currentIndex + 1) : []
 
   return (
-    <div className="flex flex-col" style={{ gap: 20, maxWidth: 720 }}>
+    <div className="flex flex-col" style={{ gap: 20, maxWidth: 720, margin: '0 auto' }}>
       <div className="flex flex-col anim-fade-up" style={{ gap: 6 }}>
         <div className="eyebrow">Стендап</div>
         <div style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-.8px' }}>Дейли</div>
@@ -96,6 +72,9 @@ export default function DailyPage() {
             <Button onClick={handleNext}>
               {currentIndex + 1 >= order.length ? 'Завершить' : 'Следующий'}
             </Button>
+            <div style={{ fontSize: 12, color: '#A5AEB8' }}>
+              Можно уйти на другие страницы — дейли поедет за вами маленьким виджетом
+            </div>
           </Card>
 
           {spoke.length > 0 && (
