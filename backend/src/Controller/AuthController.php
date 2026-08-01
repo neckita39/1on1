@@ -44,7 +44,7 @@ class AuthController extends AbstractController
             return $this->json(['error' => 'Password must be at least 12 characters'], Response::HTTP_BAD_REQUEST);
         }
 
-        $this->authService->setupPassword($password);
+        $this->authService->setupPassword($password, $data['login'] ?? null);
         $token = $this->authService->createToken();
 
         $response = $this->json(['success' => true]);
@@ -74,9 +74,11 @@ class AuthController extends AbstractController
         $data = json_decode($request->getContent(), true);
         $password = $data['password'] ?? '';
 
-        if (!$this->authService->verifyPassword($password)) {
+        $loginOk = $this->authService->verifyLogin($data['login'] ?? null);
+
+        if (!$loginOk || !$this->authService->verifyPassword($password)) {
             $this->rateLimiter->recordAttempt($rateLimitKey);
-            return $this->json(['error' => 'Invalid password'], Response::HTTP_UNAUTHORIZED);
+            return $this->json(['error' => 'Invalid credentials'], Response::HTTP_UNAUTHORIZED);
         }
 
         // Successful login - reset rate limit

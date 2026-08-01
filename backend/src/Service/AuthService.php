@@ -27,11 +27,26 @@ class AuthService
         return $settings->getPasswordHash() === null;
     }
 
-    public function setupPassword(string $password): void
+    public function setupPassword(string $password, ?string $login = null): void
     {
         $settings = $this->settingsRepository->getSettings();
         $settings->setPasswordHash(password_hash($password, PASSWORD_DEFAULT));
+        if ($login !== null && trim($login) !== '') {
+            $settings->setLogin(trim($login));
+        }
         $this->em->flush();
+    }
+
+    /** Логин проверяется, только если он задан в настройках (старые установки — вход по паролю). */
+    public function verifyLogin(?string $login): bool
+    {
+        $expected = $this->settingsRepository->getSettings()->getLogin();
+
+        if ($expected === null || $expected === '') {
+            return true;
+        }
+
+        return strcasecmp(trim($login ?? ''), $expected) === 0;
     }
 
     public function verifyPassword(string $password): bool

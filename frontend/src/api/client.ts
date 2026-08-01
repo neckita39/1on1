@@ -80,8 +80,8 @@ export interface GlobalMeeting extends Meeting {
 
 export const authApi = {
   check: () => api.get<AuthStatus>('/auth/check'),
-  setup: (password: string) => api.post('/auth/setup', { password }),
-  login: (password: string) => api.post('/auth/login', { password }),
+  setup: (login: string, password: string) => api.post('/auth/setup', { login, password }),
+  login: (login: string, password: string) => api.post('/auth/login', { login, password }),
   logout: () => api.post('/auth/logout'),
 }
 

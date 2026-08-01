@@ -48,6 +48,12 @@ $pdo->exec("
     );
 ");
 
+// Migration: логин (email) владельца в settings
+$settingsCols = $pdo->query("PRAGMA table_info(settings)")->fetchAll(PDO::FETCH_COLUMN, 1);
+if (!in_array('login', $settingsCols, true)) {
+    $pdo->exec("ALTER TABLE settings ADD COLUMN login VARCHAR(255)");
+}
+
 // Initialize settings row if not exists
 $stmt = $pdo->query("SELECT COUNT(*) FROM settings WHERE id = 1");
 if ($stmt->fetchColumn() == 0) {

@@ -17,6 +17,10 @@ class Settings
     #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
     private ?string $passwordHash = null;
 
+    /** Логин (email) владельца. NULL у старых установок — тогда вход только по паролю. */
+    #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
+    private ?string $login = null;
+
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private \DateTime $createdAt;
 
@@ -38,6 +42,17 @@ class Settings
     public function setPasswordHash(?string $passwordHash): self
     {
         $this->passwordHash = $passwordHash;
+        return $this;
+    }
+
+    public function getLogin(): ?string
+    {
+        return $this->login;
+    }
+
+    public function setLogin(?string $login): self
+    {
+        $this->login = $login;
         return $this;
     }
 
