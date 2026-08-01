@@ -1,5 +1,6 @@
 services:
   redis:
+    restart: unless-stopped
     image: redis:7-alpine
     container_name: 1on1-redis
     command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru
@@ -12,6 +13,7 @@ services:
       retries: 5
 
   backend:
+    restart: unless-stopped
     build: ./backend
     container_name: 1on1-backend
     dns:
@@ -32,6 +34,7 @@ services:
       - app-network
 
   frontend:
+    restart: unless-stopped
     build: ./frontend
     container_name: 1on1-frontend
     ports:
