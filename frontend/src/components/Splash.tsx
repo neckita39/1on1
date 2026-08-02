@@ -57,18 +57,24 @@ export default function Splash() {
           style={{ width: 52, height: 52, background: '#2FC6F6', mixBlendMode: 'screen', animation: 'convR 1.1s cubic-bezier(.22,1,.36,1) both' }}
         />
       </div>
-      <div className="flex flex-col items-center" style={{ gap: 12 }}>
-        <div style={{ color: '#fff', fontSize: 34, fontWeight: 600, letterSpacing: '-.8px', animation: 'fadeUp .7s cubic-bezier(.22,1,.36,1) .8s both' }}>
+      <div className="flex flex-col items-center px-6 text-center" style={{ gap: 12 }}>
+        <div
+          className="text-[28px] md:text-[34px]"
+          style={{ color: '#fff', fontWeight: 600, letterSpacing: '-.8px', animation: 'fadeUp .7s cubic-bezier(.22,1,.36,1) .8s both' }}
+        >
           Один на один
         </div>
-        <div style={{ color: '#8FA6C4', fontSize: 16, animation: 'fadeUp .7s cubic-bezier(.22,1,.36,1) 1s both' }}>
+        <div className="text-[15px] md:text-[16px]" style={{ color: '#8FA6C4', animation: 'fadeUp .7s cubic-bezier(.22,1,.36,1) 1s both' }}>
           Встречи, которые не хочется отменять
         </div>
       </div>
       <div
         onClick={dismiss}
-        className="absolute cursor-pointer transition-colors"
-        style={{ bottom: 34, fontSize: 13, color: '#5D7692', transitionDuration: '.2s', animation: 'fadeIn 1s 1.5s both' }}
+        className="absolute cursor-pointer transition-colors tap grid place-items-center px-6"
+        style={{
+          bottom: 'calc(26px + env(safe-area-inset-bottom, 0px))',
+          fontSize: 13, color: '#5D7692', transitionDuration: '.2s', animation: 'fadeIn 1s 1.5s both',
+        }}
         onMouseEnter={e => { e.currentTarget.style.color = '#A9C0DA' }}
         onMouseLeave={e => { e.currentTarget.style.color = '#5D7692' }}
       >

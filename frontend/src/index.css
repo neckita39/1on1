@@ -2,12 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
   background: #F6FAFB;
   color: #333333;
   font-family: Inter, -apple-system, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
 }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -67,6 +73,81 @@ body {
 }
 
 .tabular-nums { font-variant-numeric: tabular-nums; }
+
+/* ————— мобильный слой (iPhone; брейкпоинт совпадает с Tailwind md) ————— */
+
+/* высота таб-бара + нижняя safe area — общий отступ для контента и плавающих штук */
+:root {
+  --tabbar: 0px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* На тач-экранах нет ховера — показываем скрытые за ним действия */
+@media (hover: none) {
+  .touch-visible { opacity: 1 !important; }
+}
+
+@media (max-width: 767px) {
+  :root { --tabbar: 58px; }
+
+  /* iOS зумит страницу при фокусе в поле мельче 16px */
+  .input-spec,
+  input.input-spec,
+  textarea.input-spec,
+  select { font-size: 16px !important; }
+
+  .input-spec { min-height: 46px; border-radius: 10px; }
+  textarea.input-spec { min-height: 96px; }
+
+  /* пальцевые размеры: инлайновая height у кнопок перебивается min-height */
+  .btn-spec { min-height: 46px; }
+  .tap { min-height: 44px; min-width: 44px; }
+  .tap-sm { min-height: 38px; min-width: 38px; }
+
+  /* ряд карточек-метрик → горизонтальная карусель со снапом */
+  .mobile-carousel {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    margin: 0 -16px;
+    padding: 0 16px;
+    scrollbar-width: none;
+  }
+  .mobile-carousel::-webkit-scrollbar { display: none; }
+  .mobile-carousel > * {
+    flex: 0 0 74%;
+    scroll-snap-align: start;
+  }
+
+  /* полоса вкладок/фильтров уезжает вбок, а не ломает вёрстку */
+  .mobile-scroll-x {
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: 0 -16px;
+    padding: 0 16px;
+    max-width: none;
+  }
+  .mobile-scroll-x::-webkit-scrollbar { display: none; }
+  .mobile-scroll-x > * { flex: none; }
+
+  /* категория пункта повестки: из подписи в тап-пилюлю */
+  /* зона нажатия чекбокса — сам квадрат внутри остаётся 18px */
+  .check-hit { min-width: 40px; min-height: 40px; }
+
+  .cat-select {
+    padding: 5px 12px !important;
+    border-radius: 512px !important;
+    min-height: 34px;
+    font-weight: 500;
+  }
+
+  .modal-sheet { animation: sheetIn .34s cubic-bezier(.22, 1, .36, 1) both; }
+}
+
+@keyframes sheetIn { from { transform: translateY(100%); } to { transform: none; } }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

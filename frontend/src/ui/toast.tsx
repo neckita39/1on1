@@ -19,9 +19,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       {message && (
         <div
-          className="fixed z-[80] anim-fade-up"
+          className="fixed z-[80] anim-fade-up max-w-[calc(100vw-32px)] text-center"
           style={{
-            bottom: 26,
+            // на телефоне поднимаем над таб-баром и домашним индикатором
+            bottom: 'calc(var(--tabbar) + var(--safe-b) + 16px)',
             left: '50%',
             transform: 'translateX(-50%)',
             background: '#0A1B33',

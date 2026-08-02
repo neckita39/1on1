@@ -1,6 +1,25 @@
-import { ReactNode, ButtonHTMLAttributes, useState } from 'react'
+import { ReactNode, ButtonHTMLAttributes, useEffect, useState } from 'react'
 
 // ————— палитра и хелперы —————
+
+// Брейкпоинт совпадает с Tailwind md и с мобильным слоем в index.css
+export const MOBILE_QUERY = '(max-width: 767px)'
+
+// Нужен там, где мобильная и десктопная разметка расходятся по DOM:
+// шторка вместо модалки, стрелки вместо drag & drop, порядок блоков.
+export function useIsMobile(): boolean {
+  const [mobile, setMobile] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia(MOBILE_QUERY).matches
+  )
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE_QUERY)
+    const onChange = (e: MediaQueryListEvent) => setMobile(e.matches)
+    mq.addEventListener('change', onChange)
+    setMobile(mq.matches)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  return mobile
+}
 
 export const AVATAR_COLORS = ['#0075FF', '#853AF5', '#1BCE7B', '#FAA72C', '#2FC6F6', '#5B22B0']
 
@@ -152,7 +171,7 @@ export function Button({ variant = 'primary', size = 'md', sheen = false, classN
     return (
       <button
         {...rest}
-        className={`relative overflow-hidden rounded-[10px] bg-primary text-white font-medium text-[15px] px-[18px] transition-[background,transform] duration-150 hover:bg-primary-hover active:scale-[.985] disabled:opacity-50 disabled:pointer-events-none ${className}`}
+        className={`btn-spec relative overflow-hidden rounded-[10px] bg-primary text-white font-medium text-[15px] px-[18px] transition-[background,transform] duration-150 hover:bg-primary-hover active:scale-[.985] disabled:opacity-50 disabled:pointer-events-none ${className}`}
         style={{ height }}
       >
         {sheen && (
@@ -172,7 +191,7 @@ export function Button({ variant = 'primary', size = 'md', sheen = false, classN
   return (
     <button
       {...rest}
-      className={`rounded-[10px] bg-white border border-line-accent text-ink text-[13px] px-[15px] transition-colors duration-150 hover:bg-blue-tint-light hover:border-hover-border-deep active:scale-[.985] disabled:opacity-50 disabled:pointer-events-none ${className}`}
+      className={`btn-spec rounded-[10px] bg-white border border-line-accent text-ink text-[13px] md:text-[13px] max-md:text-[15px] px-[15px] transition-colors duration-150 hover:bg-blue-tint-light hover:border-hover-border-deep active:scale-[.985] disabled:opacity-50 disabled:pointer-events-none ${className}`}
       style={{ height: size === 'lg' ? 44 : 38 }}
     >
       {children}
@@ -186,24 +205,31 @@ export function SpecCheckbox({ checked, onChange, color = '#0075FF' }: {
   color?: string
 }) {
   return (
+    // внешняя кнопка — зона нажатия (на мобильном её растит .check-hit),
+    // внутренний квадрат — сам чекбокс
     <button
       type="button"
       onClick={onChange}
-      className="grid place-items-center flex-none transition-colors duration-200"
-      style={{
-        width: 18,
-        height: 18,
-        borderRadius: 6,
-        border: checked ? `1.5px solid ${color}` : '1.5px solid #D5DDE5',
-        background: checked ? color : '#fff',
-      }}
+      className="check-hit grid place-items-center flex-none"
+      aria-pressed={checked}
     >
-      {checked && (
-        <span
-          className="bg-white"
-          style={{ width: 8, height: 8, borderRadius: 2, animation: 'checkIn .25s cubic-bezier(.22,1,.36,1) both' }}
-        />
-      )}
+      <span
+        className="grid place-items-center transition-colors duration-200"
+        style={{
+          width: 18,
+          height: 18,
+          borderRadius: 6,
+          border: checked ? `1.5px solid ${color}` : '1.5px solid #D5DDE5',
+          background: checked ? color : '#fff',
+        }}
+      >
+        {checked && (
+          <span
+            className="bg-white"
+            style={{ width: 8, height: 8, borderRadius: 2, animation: 'checkIn .25s cubic-bezier(.22,1,.36,1) both' }}
+          />
+        )}
+      </span>
     </button>
   )
 }
@@ -213,19 +239,24 @@ export function Toggle({ on, onChange, color = '#0075FF' }: { on: boolean; onCha
     <button
       type="button"
       onClick={onChange}
-      className="rounded-pill flex-none transition-colors"
-      style={{ width: 38, height: 22, padding: 2, background: on ? color : '#DCE4EA', transitionDuration: '.22s' }}
+      aria-pressed={on}
+      className="check-hit grid place-items-center flex-none"
     >
       <span
-        className="block bg-white rounded-full"
-        style={{
-          width: 18,
-          height: 18,
-          boxShadow: '0 1px 3px rgba(0,0,0,.2)',
-          transform: on ? 'translateX(16px)' : 'translateX(0)',
-          transition: 'transform .22s cubic-bezier(.22,1,.36,1)',
-        }}
-      />
+        className="rounded-pill block transition-colors"
+        style={{ width: 38, height: 22, padding: 2, background: on ? color : '#DCE4EA', transitionDuration: '.22s' }}
+      >
+        <span
+          className="block bg-white rounded-full"
+          style={{
+            width: 18,
+            height: 18,
+            boxShadow: '0 1px 3px rgba(0,0,0,.2)',
+            transform: on ? 'translateX(16px)' : 'translateX(0)',
+            transition: 'transform .22s cubic-bezier(.22,1,.36,1)',
+          }}
+        />
+      </span>
     </button>
   )
 }
@@ -248,20 +279,56 @@ export function Card({ children, className = '', style, hover = false, onClick }
   )
 }
 
+// На мобильном модалка превращается в шторку снизу: ближе к пальцу,
+// не прыгает при появлении клавиатуры и скроллится внутри себя.
 export function Modal({ onClose, children, maxWidth = 440 }: {
   onClose: () => void
   children: ReactNode
   maxWidth?: number
 }) {
+  const mobile = useIsMobile()
+
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [])
+
+  if (mobile) {
+    return (
+      <div
+        className="fixed inset-0 z-[70] flex items-end anim-fade-in"
+        style={{ background: 'rgba(10,27,51,.34)', animationDuration: '.22s' }}
+        onClick={onClose}
+      >
+        <div
+          className="bg-white w-full modal-sheet overflow-y-auto overscroll-contain"
+          style={{
+            borderRadius: '20px 20px 0 0',
+            padding: '10px 18px calc(20px + env(safe-area-inset-bottom, 0px))',
+            maxHeight: '88dvh',
+            boxShadow: '0 -10px 40px rgba(10,27,51,.18)',
+          }}
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="grid place-items-center" style={{ padding: '2px 0 14px' }}>
+            <span style={{ width: 38, height: 4, borderRadius: 4, background: '#DCE4EA' }} />
+          </div>
+          {children}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div
       className="fixed inset-0 z-[70] grid place-items-center anim-fade-in"
-      style={{ background: 'rgba(10,27,51,.28)', animationDuration: '.22s' }}
+      style={{ background: 'rgba(10,27,51,.28)', animationDuration: '.22s', padding: 16 }}
       onClick={onClose}
     >
       <div
-        className="bg-white w-full anim-modal-in"
-        style={{ maxWidth, borderRadius: 18, padding: 26, boxShadow: '0 20px 60px rgba(10,27,51,.22)' }}
+        className="bg-white w-full anim-modal-in overflow-y-auto"
+        style={{ maxWidth, maxHeight: '92vh', borderRadius: 18, padding: 26, boxShadow: '0 20px 60px rgba(10,27,51,.22)' }}
         onClick={e => e.stopPropagation()}
       >
         {children}
@@ -297,11 +364,11 @@ export function Spinner({ size = 13 }: { size?: number }) {
 export function SkeletonScreen() {
   return (
     <div className="flex flex-col gap-[18px] anim-fade-in" style={{ animationDuration: '.2s' }}>
-      <div className="skeleton" style={{ height: 34, width: 280, borderRadius: 10 }} />
-      <div className="grid grid-cols-3 gap-4">
+      <div className="skeleton" style={{ height: 34, width: 'min(280px,70%)', borderRadius: 10 }} />
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <div className="skeleton" style={{ height: 96, borderRadius: 16, animationDelay: '.1s' }} />
         <div className="skeleton" style={{ height: 96, borderRadius: 16, animationDelay: '.2s' }} />
-        <div className="skeleton" style={{ height: 96, borderRadius: 16, animationDelay: '.15s' }} />
+        <div className="skeleton hidden md:block" style={{ height: 96, borderRadius: 16, animationDelay: '.15s' }} />
       </div>
       <div className="skeleton" style={{ height: 320, borderRadius: 16 }} />
     </div>

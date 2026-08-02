@@ -33,14 +33,14 @@ export default function ImportantPage() {
   }
 
   return (
-    <div className="flex flex-col" style={{ gap: 20, maxWidth: 720, margin: '0 auto' }}>
+    <div className="flex flex-col gap-4 md:gap-5" style={{ maxWidth: 720, margin: '0 auto', width: '100%' }}>
       <div className="flex flex-col anim-fade-up" style={{ gap: 6 }}>
         <div className="eyebrow">На контроле</div>
-        <div style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-.8px' }}>Важное</div>
+        <div className="text-[24px] md:text-[28px]" style={{ fontWeight: 600, letterSpacing: '-.8px' }}>Важное</div>
       </div>
 
       {loaded && items.length === 0 ? (
-        <Card style={{ padding: 48, textAlign: 'center' }}>
+        <Card className="py-10 px-5 md:p-12" style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 14, color: '#828B95' }}>
             Отметьте пункт повестки звёздочкой — он появится здесь
           </div>
@@ -57,9 +57,10 @@ export default function ImportantPage() {
               >
                 <button
                   onClick={() => unmark(item.id)}
-                  className="flex-none transition-opacity hover:opacity-60"
+                  className="tap-sm grid place-items-center flex-none transition-opacity hover:opacity-60"
                   style={{ paddingTop: 2 }}
                   title="Снять отметку"
+                  aria-label="Снять отметку «важное»"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="#FAA72C">
                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
@@ -82,7 +83,7 @@ export default function ImportantPage() {
                     <span style={{ fontSize: 12, color: meta.color }}>{meta.label}</span>
                     <Link
                       to={`/employees/${item.employeeId}`}
-                      className="transition-opacity hover:opacity-65"
+                      className="transition-opacity hover:opacity-65 tap-sm inline-flex items-center"
                       style={{ fontSize: 12, fontWeight: 500, color: '#0154C8' }}
                     >
                       {item.employeeName}

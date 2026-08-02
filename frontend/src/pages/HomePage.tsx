@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { employeesApi, BitrixUserPreview, Employee, GlobalMeeting } from '../api/client'
 import { useShell } from '../layout/AppShell'
-import { Avatar, Button, Card, Modal, tagBg, urgency, formatDateRu, moodColor, plural } from '../ui'
+import { Avatar, Button, Card, Modal, tagBg, urgency, formatDateRu, moodColor, plural, useIsMobile } from '../ui'
 import { useToast } from '../ui/toast'
 
 type Filter = 'all' | 'soon' | 'late'
@@ -70,19 +70,28 @@ function PulseSparkline({ meetings }: { meetings: GlobalMeeting[] }) {
   )
 }
 
-function EmployeeCardNew({ employee, meetings, index }: {
+function EmployeeCardNew({ employee, meetings, index, mobile }: {
   employee: Employee
   meetings: GlobalMeeting[]
   index: number
+  mobile: boolean
 }) {
   const navigate = useNavigate()
   const u = urgency(employee.lastMeetingDate, employee.nextMeetingAt)
+  const badge = (
+    <span
+      className="rounded-pill flex-none"
+      style={{ fontSize: 12, padding: '4px 10px', background: tagBg(u.color), color: u.color, whiteSpace: 'nowrap' }}
+    >
+      {u.label}
+    </span>
+  )
   return (
     <Card
       hover
       onClick={() => navigate(`/employees/${employee.id}`)}
       className="flex flex-col anim-fade-up"
-      style={{ padding: 18, gap: 15, animationDuration: '.55s', animationDelay: `${index * 0.06}s` }}
+      style={{ padding: mobile ? 16 : 18, gap: mobile ? 12 : 15, animationDuration: '.55s', animationDelay: `${index * 0.06}s` }}
     >
       <div className="flex items-center" style={{ gap: 12 }}>
         <div className="relative flex-none">
@@ -97,29 +106,26 @@ function EmployeeCardNew({ employee, meetings, index }: {
           <div className="truncate" style={{ fontSize: 13, color: employee.isManager ? '#5B22B0' : '#828B95' }}>
             {employee.isManager ? 'Мой тимлид' : employee.position || '—'}
           </div>
+          {/* на узком экране срок съедал бы имя — уводим его под должность */}
+          {mobile && <div style={{ marginTop: 6 }}>{badge}</div>}
         </div>
-        <span
-          className="rounded-pill flex-none"
-          style={{ fontSize: 12, padding: '4px 10px', background: tagBg(u.color), color: u.color }}
-        >
-          {u.label}
-        </span>
+        {!mobile && badge}
       </div>
       <PulseSparkline meetings={meetings} />
       <div
         className="flex items-center justify-between"
-        style={{ borderTop: '1px solid #F7F7F7', paddingTop: 12 }}
+        style={{ borderTop: '1px solid #F7F7F7', paddingTop: mobile ? 6 : 12 }}
       >
         <span style={{ fontSize: 12, color: '#828B95' }}>
           {employee.lastMeetingDate ? `Последняя: ${formatDateRu(employee.lastMeetingDate)}` : 'Встреч ещё не было'}
         </span>
-        <span
+        <button
           onClick={e => { e.stopPropagation(); navigate(`/meeting/${employee.id}`) }}
-          className="transition-opacity hover:opacity-65"
-          style={{ fontSize: 13, fontWeight: 500, color: '#0154C8' }}
+          className="tap-sm transition-opacity hover:opacity-65"
+          style={{ fontSize: 13, fontWeight: 500, color: '#0154C8', paddingLeft: 12 }}
         >
           Начать 1-1
-        </span>
+        </button>
       </div>
     </Card>
   )
@@ -132,6 +138,7 @@ export default function HomePage() {
   const [showAdd, setShowAdd] = useState(false)
   const navigate = useNavigate()
   const toast = useToast()
+  const isMobile = useIsMobile()
 
   const sorted = useMemo(
     () => [...employees].sort((a, b) => urgency(a.lastMeetingDate, a.nextMeetingAt).due - urgency(b.lastMeetingDate, b.nextMeetingAt).due),
@@ -181,16 +188,31 @@ export default function HomePage() {
   ]
 
   return (
-    <div className="flex flex-col" style={{ gap: 24 }}>
+    <div className="flex flex-col gap-5 md:gap-6">
       <div className="flex items-end justify-between anim-fade-up" style={{ gap: 16 }}>
         <div className="flex flex-col" style={{ gap: 6 }}>
           <div className="eyebrow">Ваша команда</div>
-          <div style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-.8px' }}>{greeting()}!</div>
+          <div className="text-[24px] md:text-[28px]" style={{ fontWeight: 600, letterSpacing: '-.8px' }}>
+            {greeting()}!
+          </div>
         </div>
-        <Button onClick={() => setShowAdd(true)}>Добавить сотрудника</Button>
+        {isMobile ? (
+          <button
+            onClick={() => setShowAdd(true)}
+            aria-label="Добавить сотрудника"
+            className="rounded-full bg-primary text-white grid place-items-center flex-none active:scale-[.96] transition-transform"
+            style={{ width: 46, height: 46, boxShadow: '0 6px 18px rgba(0,117,255,.28)' }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </button>
+        ) : (
+          <Button onClick={() => setShowAdd(true)}>Добавить сотрудника</Button>
+        )}
       </div>
 
-      <div className="grid grid-cols-3" style={{ gap: 16 }}>
+      <div className="mobile-carousel md:grid md:grid-cols-3" style={{ gap: 16 }}>
         <Metric
           label="Встреч на этой неделе"
           value={String(weekMeetings)}
@@ -217,47 +239,48 @@ export default function HomePage() {
         />
       </div>
 
-      <div className="flex items-center justify-between anim-fade-up" style={{ gap: 16, animationDelay: '.1s' }}>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between anim-fade-up gap-3 md:gap-4" style={{ animationDelay: '.1s' }}>
         <div style={{ fontSize: 16, fontWeight: 600 }}>Сотрудники</div>
-        <div className="flex items-center" style={{ gap: 8 }}>
+        <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-2">
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Поиск"
-            className="input-spec"
-            style={{ height: 30, width: 180, fontSize: 13, borderRadius: 512, padding: '0 13px' }}
+            placeholder="Поиск по имени или роли"
+            className="input-spec w-full md:w-[180px] md:h-[30px] md:text-[13px]"
+            style={{ borderRadius: 512, padding: '0 15px' }}
           />
-          {chips.map(c => (
-            <button
-              key={c.key}
-              onClick={() => setFilter(c.key)}
-              className="rounded-pill transition-colors"
-              style={{
-                height: 30,
-                padding: '0 13px',
-                fontSize: 13,
-                border: filter === c.key ? '1px solid #0075FF' : '1px solid #E2E2E2',
-                background: filter === c.key ? '#0075FF' : '#fff',
-                color: filter === c.key ? '#fff' : '#525C69',
-                transitionDuration: '.2s',
-              }}
-            >
-              {c.label}
-            </button>
-          ))}
+          <div className="flex mobile-scroll-x md:overflow-visible" style={{ gap: 8 }}>
+            {chips.map(c => (
+              <button
+                key={c.key}
+                onClick={() => setFilter(c.key)}
+                className="rounded-pill transition-colors tap md:min-h-0 md:h-[30px] px-4 md:px-[13px]"
+                style={{
+                  height: 30,
+                  fontSize: 13,
+                  border: filter === c.key ? '1px solid #0075FF' : '1px solid #E2E2E2',
+                  background: filter === c.key ? '#0075FF' : '#fff',
+                  color: filter === c.key ? '#fff' : '#525C69',
+                  transitionDuration: '.2s',
+                }}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {loaded && filtered.length === 0 ? (
-        <Card style={{ padding: 48, textAlign: 'center' }}>
+        <Card className="py-10 px-5 md:p-12" style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 14, color: '#828B95' }}>
             {employees.length === 0 ? 'Добавьте первого сотрудника — и начнём' : 'Никого не нашлось'}
           </div>
         </Card>
       ) : (
-        <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(320px,1fr))', gap: 16 }}>
+        <div className="grid gap-3 md:gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(min(100%,320px),1fr))' }}>
           {filtered.map((e, i) => (
-            <EmployeeCardNew key={e.id} employee={e} meetings={byEmployee.get(e.id) ?? []} index={i} />
+            <EmployeeCardNew key={e.id} employee={e} meetings={byEmployee.get(e.id) ?? []} index={i} mobile={isMobile} />
           ))}
         </div>
       )}
@@ -352,7 +375,7 @@ function AddEmployeeModal({ onClose, onAdded }: {
                 key={m}
                 type="button"
                 onClick={() => { setMode(m); setError('') }}
-                className="transition-colors"
+                className="transition-colors tap"
                 style={{
                   height: 34,
                   padding: '0 14px',
@@ -435,8 +458,10 @@ function AddEmployeeModal({ onClose, onAdded }: {
           {error && <div style={{ fontSize: 13, color: '#FF5752' }}>{error}</div>}
 
           <div className="flex justify-end" style={{ gap: 8, marginTop: 4 }}>
-            <Button type="button" variant="secondary" size="lg" onClick={onClose}>Отмена</Button>
-            <Button type="submit" disabled={adding || !name.trim()}>
+            <Button type="button" variant="secondary" size="lg" onClick={onClose} className="flex-1 md:flex-none">
+              Отмена
+            </Button>
+            <Button type="submit" disabled={adding || !name.trim()} className="flex-1 md:flex-none">
               {adding ? 'Добавляем…' : 'Добавить'}
             </Button>
           </div>

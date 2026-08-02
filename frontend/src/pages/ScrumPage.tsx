@@ -2,14 +2,15 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { scrumApi, Employee, ScrumNote, ScrumTab } from '../api/client'
 import { useShell } from '../layout/AppShell'
-import { Avatar, Button, Card, Pill, formatDateRuFull } from '../ui'
+import { Avatar, Button, Card, Pill, formatDateRuFull, useIsMobile } from '../ui'
 import { useToast } from '../ui/toast'
 
 function PeoplePicker({ selected, onToggle }: { selected: number[]; onToggle: (id: number) => void }) {
   const { employees } = useShell()
+  const mobile = useIsMobile()
   if (employees.length === 0) return null
   return (
-    <div className="flex items-center flex-wrap" style={{ gap: 6 }}>
+    <div className="flex items-center flex-wrap" style={{ gap: mobile ? 8 : 6 }}>
       <span style={{ fontSize: 12, color: '#A5AEB8', marginRight: 4 }}>Из чьих 1-1:</span>
       {employees.map(e => {
         const active = selected.includes(e.id)
@@ -19,6 +20,7 @@ function PeoplePicker({ selected, onToggle }: { selected: number[]; onToggle: (i
             type="button"
             onClick={() => onToggle(e.id)}
             title={e.name}
+            aria-label={e.name}
             className="rounded-full transition-all"
             style={{
               padding: 2,
@@ -28,7 +30,7 @@ function PeoplePicker({ selected, onToggle }: { selected: number[]; onToggle: (i
               transitionDuration: '.2s',
             }}
           >
-            <Avatar name={e.name} id={e.id} url={e.avatarUrl} size={26} />
+            <Avatar name={e.name} id={e.id} url={e.avatarUrl} size={mobile ? 34 : 26} />
           </button>
         )
       })}
@@ -96,19 +98,19 @@ function NoteCard({ note, index, employees, onSaved }: {
 
   return (
     <Card
-      className="anim-fade-up group transition-[border-color,box-shadow] duration-200 hover:border-hover-border hover:shadow-[0_8px_22px_rgba(16,42,77,.06)]"
-      style={{ padding: '18px 20px', animationDuration: '.5s', animationDelay: `${index * 0.07}s` }}
+      className="anim-fade-up group transition-[border-color,box-shadow] duration-200 hover:border-hover-border hover:shadow-[0_8px_22px_rgba(16,42,77,.06)] p-4 md:px-5 md:py-[18px]"
+      style={{ animationDuration: '.5s', animationDelay: `${index * 0.07}s` }}
     >
       <div className="flex flex-col" style={{ gap: 12 }}>
-        <div className="flex items-center" style={{ gap: 10 }}>
+        <div className="flex items-center flex-wrap" style={{ gap: 10 }}>
           <Pill color={tab.color}>{tab.label}</Pill>
           <span style={{ fontSize: 12, color: '#828B95' }}>{formatDateRuFull(note.date)}</span>
           {!editing && <AvatarStack ids={note.people} employees={employees} />}
           {!editing && (
             <button
               onClick={() => { setEditing(true); setContent(note.content); setPeople(note.people) }}
-              className={`opacity-0 group-hover:opacity-100 transition-opacity ${note.people.length === 0 ? 'ml-auto' : ''}`}
-              style={{ fontSize: 12, fontWeight: 500, color: '#0154C8' }}
+              className={`opacity-0 group-hover:opacity-100 transition-opacity touch-visible tap-sm ${note.people.length === 0 ? 'ml-auto' : ''}`}
+              style={{ fontSize: 13, fontWeight: 500, color: '#0154C8' }}
             >
               Изменить
             </button>
@@ -129,8 +131,8 @@ function NoteCard({ note, index, employees, onSaved }: {
               onToggle={id => setPeople(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id])}
             />
             <div className="flex justify-end" style={{ gap: 8 }}>
-              <Button variant="secondary" onClick={() => setEditing(false)}>Отмена</Button>
-              <Button onClick={save} disabled={saving || !content.trim()}>Сохранить</Button>
+              <Button variant="secondary" onClick={() => setEditing(false)} className="flex-1 md:flex-none">Отмена</Button>
+              <Button onClick={save} disabled={saving || !content.trim()} className="flex-1 md:flex-none">Сохранить</Button>
             </div>
           </div>
         ) : (
@@ -150,6 +152,7 @@ export default function ScrumPage() {
   const [draftPeople, setDraftPeople] = useState<number[]>([])
   const [saving, setSaving] = useState(false)
   const toast = useToast()
+  const isMobile = useIsMobile()
 
   const byTab = useMemo(() => {
     const map: Record<ScrumTab, ScrumNote[]> = { sos: [], topics: [], decisions: [] }
@@ -188,21 +191,28 @@ export default function ScrumPage() {
   }
 
   return (
-    <div className="flex flex-col" style={{ gap: 20, maxWidth: 900, margin: '0 auto' }}>
+    <div className="flex flex-col gap-4 md:gap-5" style={{ maxWidth: 900, margin: '0 auto', width: '100%' }}>
       <div className="flex flex-col anim-fade-up" style={{ gap: 6 }}>
         <div className="eyebrow">Уровень команды</div>
-        <div style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-.8px' }}>Командные заметки</div>
+        <div className="text-[24px] md:text-[28px]" style={{ fontWeight: 600, letterSpacing: '-.8px' }}>
+          Командные заметки
+        </div>
       </div>
 
       <div className="flex flex-col" style={{ gap: 8 }}>
-        <div className="flex" style={{ padding: 4, background: '#EEF3F7', borderRadius: 12, gap: 4, width: 'fit-content' }}>
+        {/* полоса вкладок не влезает в 430px — уезжает вбок, а не ломается */}
+        <div className="mobile-scroll-x">
+        <div
+          className="flex"
+          style={{ padding: 4, background: '#EEF3F7', borderRadius: 12, gap: 4, width: 'fit-content' }}
+        >
           {TABS.map(t => {
             const isActive = t.key === tab
             return (
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
-                className="flex items-center transition-all"
+                className="flex items-center transition-all tap whitespace-nowrap"
                 style={{
                   gap: 7,
                   height: 34,
@@ -232,10 +242,11 @@ export default function ScrumPage() {
             )
           })}
         </div>
+        </div>
         <div style={{ fontSize: 13, color: '#828B95' }}>{active.hint}</div>
       </div>
 
-      <Card style={{ padding: 18 }}>
+      <Card className="p-4 md:p-[18px]">
         <div className="flex flex-col" style={{ gap: 12 }}>
           <textarea
             value={draft}
@@ -249,17 +260,19 @@ export default function ScrumPage() {
             selected={draftPeople}
             onToggle={id => setDraftPeople(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id])}
           />
-          <div className="flex items-center" style={{ gap: 12 }}>
-            <Button onClick={submit} disabled={saving || !draft.trim()} style={{ height: 38 }}>
+          <div className="flex items-center max-md:flex-col-reverse max-md:items-stretch" style={{ gap: 12 }}>
+            <Button onClick={submit} disabled={saving || !draft.trim()} style={{ height: 38 }} className="max-md:w-full">
               {saving ? 'Записываем…' : 'Записать'}
             </Button>
-            <span style={{ fontSize: 12, color: '#A5AEB8' }}>Заметка видна только вам · ⌘+Enter</span>
+            <span className="max-md:text-center" style={{ fontSize: 12, color: '#A5AEB8' }}>
+              Заметка видна только вам{isMobile ? '' : ' · ⌘+Enter'}
+            </span>
           </div>
         </div>
       </Card>
 
       {notes.length === 0 ? (
-        <Card style={{ padding: 40, textAlign: 'center' }}>
+        <Card className="py-10 px-5 md:p-10" style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 14, color: '#828B95' }}>В этом разделе пока пусто</div>
         </Card>
       ) : (

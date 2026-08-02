@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { employeesApi, agendaApi, meetingsApi, Employee, AgendaItem, Meeting, BitrixUserPreview } from '../api/client'
 import { useShell } from '../layout/AppShell'
-import { Avatar, Button, Card, Modal, MoodDot, Pill, SpecCheckbox, Spinner, formatDateRu, moodColor, plural } from '../ui'
+import { Avatar, Button, Card, Modal, MoodDot, Pill, SpecCheckbox, Spinner, formatDateRu, moodColor, plural, useIsMobile } from '../ui'
 import { useToast } from '../ui/toast'
 import AgendaList from '../components/AgendaList'
 
@@ -27,7 +27,7 @@ function PulseChart({ meetings }: { meetings: Meeting[] }) {
     : null
 
   return (
-    <Card style={{ padding: 20 }}>
+    <Card className="p-4 md:p-5">
       <div className="flex items-center justify-between flex-wrap" style={{ gap: 16 }}>
         <div style={{ fontSize: 15, fontWeight: 600 }}>Пульс за {last.length || 8} встреч</div>
         <div style={{ fontSize: 13, color: '#828B95' }}>{avg ? `Среднее ${avg} из 5` : 'Оценок пока нет'}</div>
@@ -37,7 +37,7 @@ function PulseChart({ meetings }: { meetings: Meeting[] }) {
           Появится после первой встречи с оценкой настроения
         </div>
       ) : (
-        <div className="flex items-end" style={{ gap: 10, height: 150, marginTop: 16 }}>
+        <div className="flex items-end gap-1.5 md:gap-2.5" style={{ height: 150, marginTop: 16 }}>
           {last.map((m, i) => (
             <div key={m.id} className="flex-1 flex flex-col items-center" style={{ gap: 6, height: '100%' }}>
               <div className="flex-1 flex items-end w-full">
@@ -61,7 +61,7 @@ function PulseChart({ meetings }: { meetings: Meeting[] }) {
   )
 }
 
-function MeetingRow({ meeting }: { meeting: Meeting }) {
+function MeetingRow({ meeting, mobile }: { meeting: Meeting; mobile: boolean }) {
   const [open, setOpen] = useState(false)
   const topics = meeting.discussedTopics.length > 0 ? meeting.discussedTopics.join(' · ') : meeting.notes.split('\n')[0]
   return (
@@ -70,9 +70,10 @@ function MeetingRow({ meeting }: { meeting: Meeting }) {
         onClick={() => setOpen(o => !o)}
         className="grid items-center cursor-pointer transition-colors"
         style={{
-          gridTemplateColumns: 'minmax(72px,90px) minmax(0,1fr) auto 10px',
-          gap: 10,
-          padding: '11px 12px',
+          // на телефоне дата и оценка уходят в верхнюю строку, тема — во вторую
+          gridTemplateColumns: mobile ? 'minmax(0,1fr) auto' : 'minmax(72px,90px) minmax(0,1fr) auto 10px',
+          gap: mobile ? 4 : 10,
+          padding: mobile ? '12px' : '11px 12px',
           margin: '0 -12px',
           borderRadius: 10,
           transitionDuration: '.15s',
@@ -80,10 +81,28 @@ function MeetingRow({ meeting }: { meeting: Meeting }) {
         onMouseEnter={e => { e.currentTarget.style.background = '#F8FBFF' }}
         onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
       >
-        <span style={{ fontSize: 13, color: '#828B95' }}>{formatDateRu(meeting.date)}</span>
-        <span className="truncate" style={{ fontSize: 13, color: '#333', minWidth: 0 }}>{topics || '—'}</span>
-        <span style={{ fontSize: 13, color: '#828B95' }}>{meeting.duration ? `${meeting.duration} мин` : ''}</span>
-        <MoodDot mood={meeting.mood} />
+        {mobile ? (
+          <>
+            <span className="flex items-center" style={{ gap: 8, fontSize: 13, color: '#828B95' }}>
+              {formatDateRu(meeting.date)}
+              {meeting.duration ? <span style={{ color: '#A5AEB8' }}>· {meeting.duration} мин</span> : null}
+            </span>
+            <MoodDot mood={meeting.mood} />
+            <span
+              className="truncate"
+              style={{ fontSize: 14, color: '#333', minWidth: 0, gridColumn: '1 / -1', marginTop: 2 }}
+            >
+              {topics || '—'}
+            </span>
+          </>
+        ) : (
+          <>
+            <span style={{ fontSize: 13, color: '#828B95' }}>{formatDateRu(meeting.date)}</span>
+            <span className="truncate" style={{ fontSize: 13, color: '#333', minWidth: 0 }}>{topics || '—'}</span>
+            <span style={{ fontSize: 13, color: '#828B95' }}>{meeting.duration ? `${meeting.duration} мин` : ''}</span>
+            <MoodDot mood={meeting.mood} />
+          </>
+        )}
       </div>
       {open && (
         <div
@@ -228,18 +247,24 @@ function Bitrix24Block({ employee, onChanged }: { employee: Employee; onChanged:
         <button
           type="button"
           onClick={toggle}
-          className="rounded-pill flex-none"
-          style={{ width: 38, height: 22, padding: 2, background: on ? '#0075FF' : '#DCE4EA', transition: 'background .22s' }}
+          aria-pressed={on}
+          aria-label="Синхронизация с календарём"
+          className="check-hit grid place-items-center flex-none"
         >
           <span
-            className="block bg-white rounded-full"
-            style={{
-              width: 18, height: 18,
-              boxShadow: '0 1px 3px rgba(0,0,0,.2)',
-              transform: on ? 'translateX(16px)' : 'translateX(0)',
-              transition: 'transform .22s cubic-bezier(.22,1,.36,1)',
-            }}
-          />
+            className="rounded-pill block"
+            style={{ width: 38, height: 22, padding: 2, background: on ? '#0075FF' : '#DCE4EA', transition: 'background .22s' }}
+          >
+            <span
+              className="block bg-white rounded-full"
+              style={{
+                width: 18, height: 18,
+                boxShadow: '0 1px 3px rgba(0,0,0,.2)',
+                transform: on ? 'translateX(16px)' : 'translateX(0)',
+                transition: 'transform .22s cubic-bezier(.22,1,.36,1)',
+              }}
+            />
+          </span>
         </button>
       </div>
       <div className="flex flex-col transition-opacity" style={{ padding: '16px 20px', gap: 14, opacity: on ? 1 : .42, transitionDuration: '.25s', pointerEvents: on ? 'auto' : 'none' }}>
@@ -357,6 +382,7 @@ export default function EmployeePage() {
   const navigate = useNavigate()
   const { reload: reloadShell } = useShell()
   const toast = useToast()
+  const isMobile = useIsMobile()
   const employeeId = parseInt(id || '0')
 
   const [employee, setEmployee] = useState<Employee | null>(null)
@@ -393,7 +419,7 @@ export default function EmployeePage() {
     <div className="flex flex-col anim-fade-up" style={{ gap: 18 }}>
       <Link
         to="/"
-        className="transition-colors"
+        className="transition-colors tap-sm inline-flex items-center"
         style={{ fontSize: 13, color: '#828B95', width: 'fit-content' }}
         onMouseEnter={e => { (e.target as HTMLElement).style.color = '#0154C8' }}
         onMouseLeave={e => { (e.target as HTMLElement).style.color = '#828B95' }}
@@ -401,28 +427,42 @@ export default function EmployeePage() {
         ← К команде
       </Link>
 
-      <div className="flex items-center" style={{ gap: 16 }}>
-        <div className="anim-pop-in">
-          <Avatar name={employee.name} id={employee.id} url={employee.avatarUrl} size={64} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center" style={{ gap: 10 }}>
-            <span style={{ fontSize: 26, fontWeight: 600, letterSpacing: '-.7px' }}>{employee.name}</span>
-            {employee.isManager && <Pill color="#853AF5">мой тимлид</Pill>}
+      <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
+        <div className="flex items-center md:flex-1 min-w-0" style={{ gap: 14 }}>
+          <div className="anim-pop-in flex-none">
+            <Avatar name={employee.name} id={employee.id} url={employee.avatarUrl} size={isMobile ? 54 : 64} />
           </div>
-          <div style={{ fontSize: 14, color: '#828B95' }}>
-            {[employee.position, tenure(employee.createdAt)].filter(Boolean).join(' · ')}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center flex-wrap" style={{ gap: 8 }}>
+              <span className="text-[21px] md:text-[26px]" style={{ fontWeight: 600, letterSpacing: '-.7px' }}>
+                {employee.name}
+              </span>
+              {employee.isManager && <Pill color="#853AF5">мой тимлид</Pill>}
+            </div>
+            <div className="text-[13px] md:text-[14px]" style={{ color: '#828B95' }}>
+              {[employee.position, tenure(employee.createdAt)].filter(Boolean).join(' · ')}
+            </div>
           </div>
         </div>
-        <Button variant="secondary" onClick={() => setShowEdit(true)}>Редактировать</Button>
-        <Button onClick={() => navigate(`/meeting/${employee.id}`)}>Начать встречу</Button>
+        <div className="flex md:contents" style={{ gap: 8 }}>
+          <Button variant="secondary" onClick={() => setShowEdit(true)} className="flex-1 md:flex-none">
+            Редактировать
+          </Button>
+          <Button onClick={() => navigate(`/meeting/${employee.id}`)} className="flex-1 md:flex-none">
+            Начать встречу
+          </Button>
+        </div>
       </div>
 
-      <div className="grid items-start" style={{ gridTemplateColumns: 'minmax(0,1fr) minmax(300px,336px)', gap: 16 }}>
-        <div className="flex flex-col" style={{ gap: 16 }}>
-          <PulseChart meetings={meetings} />
+      {/* На телефоне колонки «схлопываются» в один поток, а порядок блоков
+          задаётся order: сначала повестка и досье, техника — в конец */}
+      <div className="max-md:flex max-md:flex-col md:grid md:items-start gap-3 md:gap-4 md:grid-cols-[minmax(0,1fr)_minmax(300px,336px)]">
+        <div className="max-md:contents md:flex md:flex-col md:gap-4">
+          <div className="max-md:order-4">
+            <PulseChart meetings={meetings} />
+          </div>
 
-          <Card style={{ padding: 20 }}>
+          <Card className="p-4 md:p-5 max-md:order-1">
             <div className="flex items-center justify-between flex-wrap" style={{ gap: 16, marginBottom: 14 }}>
               <div style={{ fontSize: 15, fontWeight: 600 }}>Повестка следующей встречи</div>
               <div style={{ fontSize: 13, color: '#828B95' }}>
@@ -438,38 +478,40 @@ export default function EmployeePage() {
             />
           </Card>
 
-          <Card style={{ padding: 20 }}>
-            <div className="flex items-center justify-between" style={{ marginBottom: 8 }}>
+          <Card className="p-4 md:p-5 max-md:order-5">
+            <div className="flex items-center justify-between" style={{ marginBottom: 8, gap: 12 }}>
               <div style={{ fontSize: 15, fontWeight: 600 }}>История встреч</div>
-              <span
+              <button
                 onClick={() => navigate('/history')}
-                className="cursor-pointer transition-opacity hover:opacity-65"
+                className="cursor-pointer transition-opacity hover:opacity-65 tap-sm"
                 style={{ fontSize: 13, fontWeight: 500, color: '#0154C8' }}
               >
                 Вся история
-              </span>
+              </button>
             </div>
             {meetings.length === 0 ? (
               <div style={{ fontSize: 13, color: '#A5AEB8' }}>Встреч ещё не было</div>
             ) : (
-              meetings.map(m => <MeetingRow key={m.id} meeting={m} />)
+              meetings.map(m => <MeetingRow key={m.id} meeting={m} mobile={isMobile} />)
             )}
           </Card>
         </div>
 
-        <div className="flex flex-col" style={{ gap: 16 }}>
-          <Bitrix24Block employee={employee} onChanged={() => { loadData(); reloadShell() }} />
+        <div className="max-md:contents md:flex md:flex-col md:gap-4">
+          <div className="max-md:order-6">
+            <Bitrix24Block employee={employee} onChanged={() => { loadData(); reloadShell() }} />
+          </div>
 
-          <Card style={{ padding: 18 }}>
+          <Card className="p-4 md:p-[18px] max-md:order-2">
             <div className="flex items-center justify-between" style={{ marginBottom: 10 }}>
               <div style={{ fontSize: 14, fontWeight: 600 }}>Досье</div>
-              <span
+              <button
                 onClick={() => setShowEdit(true)}
-                className="cursor-pointer transition-opacity hover:opacity-65"
+                className="cursor-pointer transition-opacity hover:opacity-65 tap-sm"
                 style={{ fontSize: 12, fontWeight: 500, color: '#0154C8' }}
               >
                 Изменить
-              </span>
+              </button>
             </div>
             {employee.bio ? (
               <div style={{ fontSize: 13, lineHeight: 1.6, color: '#525C69', whiteSpace: 'pre-wrap' }}>{employee.bio}</div>
@@ -481,7 +523,7 @@ export default function EmployeePage() {
           </Card>
 
           {important.length > 0 && (
-            <Card style={{ padding: 18 }}>
+            <Card className="p-4 md:p-[18px] max-md:order-3">
               <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 10 }}>Важное</div>
               <div className="flex flex-col" style={{ gap: 8 }}>
                 {important.map(item => (
@@ -607,25 +649,31 @@ function EditEmployeeModal({ employee, onClose, onSaved, onDeleted }: {
             style={{ height: 'auto', padding: 13, borderRadius: 12, fontSize: 14, lineHeight: 1.6, resize: 'vertical' }}
           />
         </label>
-        <div className="flex items-center justify-between" style={{ gap: 8 }}>
+        <div className="flex max-md:flex-col-reverse md:items-center md:justify-between gap-3 md:gap-2">
           {confirmDelete ? (
-            <span className="flex items-center" style={{ gap: 10, fontSize: 13 }}>
+            <span className="flex items-center flex-wrap" style={{ gap: 10, fontSize: 13 }}>
               <span style={{ color: '#525C69' }}>Точно удалить? Пропадёт вся история.</span>
-              <button type="button" onClick={remove} disabled={saving} style={{ color: '#FF5752', fontWeight: 500 }}>Да, удалить</button>
+              <button type="button" onClick={remove} disabled={saving} className="tap-sm" style={{ color: '#FF5752', fontWeight: 500 }}>
+                Да, удалить
+              </button>
             </span>
           ) : (
             <button
               type="button"
               onClick={() => setConfirmDelete(true)}
-              className="transition-opacity hover:opacity-70"
+              className="transition-opacity hover:opacity-70 tap-sm max-md:self-center"
               style={{ fontSize: 13, color: '#FF5752' }}
             >
               Удалить сотрудника
             </button>
           )}
-          <div className="flex" style={{ gap: 8 }}>
-            <Button type="button" variant="secondary" size="lg" onClick={onClose}>Отмена</Button>
-            <Button type="submit" disabled={saving || !name.trim()}>Сохранить</Button>
+          <div className="flex max-md:w-full" style={{ gap: 8 }}>
+            <Button type="button" variant="secondary" size="lg" onClick={onClose} className="flex-1 md:flex-none">
+              Отмена
+            </Button>
+            <Button type="submit" disabled={saving || !name.trim()} className="flex-1 md:flex-none">
+              Сохранить
+            </Button>
           </div>
         </div>
       </form>
