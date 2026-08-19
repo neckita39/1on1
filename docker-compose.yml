@@ -38,7 +38,7 @@ services:
     build: ./frontend
     container_name: 1on1-frontend
     ports:
-      - "127.0.0.1:3000:80"  # Доступ только с localhost
+      - "3000:80"  # Доступен из локальной сети — снаружи проксирует роутер (1on1.callstatic.crazedns.ru)
     depends_on:
       - backend
     networks:
