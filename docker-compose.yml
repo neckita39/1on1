@@ -38,8 +38,7 @@ services:
     build: ./frontend
     container_name: 1on1-frontend
     ports:
-      - "3000:80"   # HTTP для локальной сети
-      - "3443:443"  # HTTPS для роутера (1on1.callstatic.crazedns.ru), сертификат самоподписанный
+      - "3000:80"  # Доступен из локальной сети — снаружи проксирует роутер (1on1.callstatic.crazedns.ru)
     depends_on:
       - backend
     networks:
