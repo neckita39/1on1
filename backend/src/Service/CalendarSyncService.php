@@ -7,7 +7,7 @@ use App\Repository\EmployeeRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Находит в календаре Битрикс24 регулярные встречи вида «1-1 (Имя)»
+ * Находит в календаре Битрикс24 регулярные встречи вида «1-1 (Имя)» и «1-1 | Имя Фамилия»
  * и привязывает их к сотрудникам: правило повтора + дата следующей встречи.
  */
 class CalendarSyncService
@@ -143,8 +143,18 @@ class CalendarSyncService
     private function matchEmployee(string $eventName, array $employees, array $excludeIds, ?string $ownerFirstName): ?Employee
     {
         preg_match_all('~\(([^)]+)\)~u', $eventName, $m);
+        $groups = $m[1];
+
+        // имя без скобок: «1-1 | Вадим Валеев», «1-1 — Дима» — хвост после префикса и разделителя
+        $tail = preg_replace('~^1\s*-\s*1~u', '', $eventName);
+        $tail = preg_replace('~\([^)]*\)~u', '', $tail);
+        $tail = preg_replace('~^[\s|—–:·.-]+|[\s|—–:·.-]+$~u', '', $tail);
+        if ($tail !== '') {
+            $groups[] = $tail;
+        }
+
         $tokens = [];
-        foreach ($m[1] as $group) {
+        foreach ($groups as $group) {
             foreach (preg_split('~[-,/]~u', $group) as $part) {
                 $part = trim($part);
                 if ($part !== '') {
